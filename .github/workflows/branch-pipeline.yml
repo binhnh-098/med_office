@@ -1,0 +1,64 @@
+name: Branch Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+  pull_request:
+    branches:
+      - develop
+      - staging
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 26
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 26
+          cache: maven
+
+      - name: Run tests
+        run: ./mvnw test
+
+  deploy-development:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+
+    steps:
+      - name: Development deploy placeholder
+        run: echo "Deploy development build from develop branch"
+
+  deploy-demo:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: demo
+
+    steps:
+      - name: Demo deploy placeholder
+        run: echo "Deploy demo build from staging branch"
+
+  deploy-production:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Production deploy placeholder
+        run: echo "Deploy production build from main branch"
