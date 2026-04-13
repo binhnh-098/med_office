@@ -42,20 +42,6 @@ $env:SPRING_PROFILES_ACTIVE='prod'
 ./mvnw test
 ```
 
-## Branch Strategy
-
-- `develop`: branch for daily development
-- `staging`: branch for demo/UAT deployment
-- `main`: branch for production deployment
-
-Recommended flow:
-
-```text
-develop -> staging -> main
-```
-
-Use pull requests between these branches instead of pushing changes manually.
-
 ## API
 
 Base URL:
@@ -98,7 +84,3 @@ Requires the same session cookie.
 - Runtime data is read from the database only.
 - No hardcoded runtime seed data is created by the application.
 - Test data is isolated in `src/test/resources/data.sql`.
-- GitHub Actions workflow is branch-based:
-  - `develop` -> development pipeline
-  - `staging` -> demo pipeline
-  - `main` -> production pipeline

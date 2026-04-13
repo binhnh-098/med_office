@@ -38,6 +38,20 @@ INSERT INTO nguoi_dung (
     CURRENT_TIMESTAMP
 );
 
+INSERT INTO nha_cung_cap (
+    id,
+    ma_nha_cung_cap,
+    ten_nha_cung_cap,
+    trang_thai,
+    ngay_tao
+) VALUES (
+    1,
+    'DVG01',
+    N'So Y Te',
+    'ACTIVE',
+    CURRENT_TIMESTAMP
+);
+
 INSERT INTO nguoi_dung (
     id,
     ten_dang_nhap,

@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.example.med_office.dto.ApiCode;
 import com.example.med_office.dto.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,6 +15,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -41,5 +44,26 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(ApiCode.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(ApiCode.UNAUTHORIZED, "Invalid username or password"));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResponseStatusException(ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(ex.getStatusCode().value(), ex.getReason()));
+    }
+
+    @ExceptionHandler({DataIntegrityViolationException.class, ConstraintViolationException.class})
+    public ResponseEntity<ApiResponse<Object>> handleDatabaseConstraintViolation(Exception ex) {
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Request data violates database constraints"));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnexpectedException(Exception ex) {
+        return ResponseEntity.internalServerError()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(500, "Internal server error"));
     }
 }
