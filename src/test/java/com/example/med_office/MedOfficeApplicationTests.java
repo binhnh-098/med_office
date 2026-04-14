@@ -156,7 +156,26 @@ class MedOfficeApplicationTests {
                                   "ngayNhan": "2026-04-02",
                                   "mucDoKhan": "KHAN",
                                   "mucDoMat": "THUONG",
-                                  "nguonNhan": "EMAIL"
+                                  "phongBanXuLyId": 10,
+                                  "nguoiXuLyId": 2,
+                                  "nguonNhan": "EMAIL",
+                                  "hanXuLy": "2026-04-10",
+                                  "doKhanXuLy": "CAO",
+                                  "loaiVanBanId": 3,
+                                  "linhVucId": 4,
+                                  "hoSoId": 5,
+                                  "soTrang": 12,
+                                  "soBan": 2,
+                                  "trichYeu": "Trich yeu van ban",
+                                  "ghiChu": "Ghi chu xu ly",
+                                  "yKienChiDao": "Xu ly gap",
+                                  "tepDinhKemChinh": "huong-dan.pdf",
+                                  "daDoc": true,
+                                  "daXuLy": false,
+                                  "isDeleted": false,
+                                  "nguoiTaoId": 1,
+                                  "nguoiCapNhatId": 1,
+                                  "trangThai": "DANG_XU_LY"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -166,7 +185,183 @@ class MedOfficeApplicationTests {
                 .andExpect(jsonPath("$.data.soDen").value("456"))
                 .andExpect(jsonPath("$.data.donViGuiId").value(1))
                 .andExpect(jsonPath("$.data.donViGui").value("So Y Te"))
-                .andExpect(jsonPath("$.data.trangThai").value("MOI_TIEP_NHAN"));
+                .andExpect(jsonPath("$.data.phongBanXuLyId").value(10))
+                .andExpect(jsonPath("$.data.nguoiXuLyId").value(2))
+                .andExpect(jsonPath("$.data.hanXuLy").value("2026-04-10"))
+                .andExpect(jsonPath("$.data.doKhanXuLy").value("CAO"))
+                .andExpect(jsonPath("$.data.loaiVanBanId").value(3))
+                .andExpect(jsonPath("$.data.linhVucId").value(4))
+                .andExpect(jsonPath("$.data.hoSoId").value(5))
+                .andExpect(jsonPath("$.data.soTrang").value(12))
+                .andExpect(jsonPath("$.data.soBan").value(2))
+                .andExpect(jsonPath("$.data.trichYeu").value("Trich yeu van ban"))
+                .andExpect(jsonPath("$.data.ghiChu").value("Ghi chu xu ly"))
+                .andExpect(jsonPath("$.data.ykienChiDao").doesNotExist())
+                .andExpect(jsonPath("$.data.yKienChiDao").value("Xu ly gap"))
+                .andExpect(jsonPath("$.data.tepDinhKemChinh").value("huong-dan.pdf"))
+                .andExpect(jsonPath("$.data.daDoc").value(true))
+                .andExpect(jsonPath("$.data.daXuLy").value(false))
+                .andExpect(jsonPath("$.data.isDeleted").value(false))
+                .andExpect(jsonPath("$.data.nguoiTaoId").value(1))
+                .andExpect(jsonPath("$.data.nguoiCapNhatId").value(1))
+                .andExpect(jsonPath("$.data.trangThai").value("DANG_XU_LY"));
+    }
+
+    @Test
+    void listCongVanDenRequiresAuthenticatedSessionAndReturnsCreatedRecords() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/cong-van-den")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "soCongVan": "132/SYT",
+                                  "soDen": "464",
+                                  "tieuDe": "Van ban danh sach",
+                                  "noiDungTomTat": "Du lieu de kiem tra list",
+                                  "donViGuiId": 1,
+                                  "nguoiKy": "Nguyen Van B",
+                                  "ngayVanBan": "2026-04-10",
+                                  "ngayNhan": "2026-04-11",
+                                  "mucDoKhan": "THUONG",
+                                  "mucDoMat": "THUONG",
+                                  "nguonNhan": "EMAIL"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/cong-van-den/danh-sach-cong-van-den")
+                        .session(session)
+                        .param("keyword", "132/SYT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("Lay danh sach cong van den thanh cong"))
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.size").value(20))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.items[0].soCongVan").value("132/SYT"))
+                .andExpect(jsonPath("$.data.items[0].soDen").value("464"))
+                .andExpect(jsonPath("$.data.items[0].donViGui").value("So Y Te"));
+    }
+
+    @Test
+    void listCongVanDenSupportsPaginationSearchAndFilters() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/cong-van-den")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "soCongVan": "140/SYT",
+                                  "soDen": "500",
+                                  "tieuDe": "Thong bao khan",
+                                  "noiDungTomTat": "Van ban 1",
+                                  "donViGuiId": 1,
+                                  "nguoiKy": "Nguyen Van C",
+                                  "ngayVanBan": "2026-04-05",
+                                  "ngayNhan": "2026-04-06",
+                                  "mucDoKhan": "KHAN",
+                                  "mucDoMat": "THUONG",
+                                  "nguonNhan": "EMAIL",
+                                  "trangThai": "DANG_XU_LY",
+                                  "daDoc": true,
+                                  "daXuLy": false
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/cong-van-den")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "soCongVan": "141/SYT",
+                                  "soDen": "501",
+                                  "tieuDe": "Thong bao thuong",
+                                  "noiDungTomTat": "Van ban 2",
+                                  "donViGuiId": 1,
+                                  "nguoiKy": "Nguyen Van D",
+                                  "ngayVanBan": "2026-04-09",
+                                  "ngayNhan": "2026-04-10",
+                                  "mucDoKhan": "THUONG",
+                                  "mucDoMat": "THUONG",
+                                  "nguonNhan": "EMAIL",
+                                  "trangThai": "HOAN_THANH",
+                                  "daDoc": false,
+                                  "daXuLy": true
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/cong-van-den/danh-sach-cong-van-den")
+                        .session(session)
+                        .param("page", "0")
+                        .param("size", "1")
+                        .param("keyword", "Thong bao")
+                        .param("trangThai", "HOAN_THANH")
+                        .param("daXuLy", "true")
+                        .param("daDoc", "false")
+                        .param("ngayNhanFrom", "2026-04-09")
+                        .param("ngayNhanTo", "2026-04-11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.size").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.hasNext").value(false))
+                .andExpect(jsonPath("$.data.hasPrevious").value(false))
+                .andExpect(jsonPath("$.data.items[0].soCongVan").value("141/SYT"))
+                .andExpect(jsonPath("$.data.items[0].trangThai").value("HOAN_THANH"))
+                .andExpect(jsonPath("$.data.items[0].daXuLy").value(true))
+                .andExpect(jsonPath("$.data.items[0].daDoc").value(false));
+    }
+
+    @Test
+    void listCongVanDenRejectsInvalidDateRange() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(get("/api/cong-van-den/danh-sach-cong-van-den")
+                        .session(session)
+                        .param("ngayNhanFrom", "2026-04-12")
+                        .param("ngayNhanTo", "2026-04-10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("Khoang ngay nhan khong hop le"));
     }
 
     @Test
@@ -199,13 +394,23 @@ class MedOfficeApplicationTests {
                                   "ngay_nhan": "2026-04-07",
                                   "muc_do_khan": "KHAN",
                                   "muc_do_mat": "THUONG",
-                                  "nguon_nhan": "EMAIL"
+                                  "nguon_nhan": "EMAIL",
+                                  "han_xu_ly": "2026-04-12",
+                                  "do_khan_xu_ly": "TRUNG_BINH",
+                                  "phong_ban_xu_ly_id": 8,
+                                  "nguoi_xu_ly_id": 2,
+                                  "trich_yeu": "Tom tat ngan"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.soCongVan").value("124/SYT"))
                 .andExpect(jsonPath("$.data.soDen").value("459"))
-                .andExpect(jsonPath("$.data.donViGuiId").value(1));
+                .andExpect(jsonPath("$.data.donViGuiId").value(1))
+                .andExpect(jsonPath("$.data.hanXuLy").value("2026-04-12"))
+                .andExpect(jsonPath("$.data.doKhanXuLy").value("TRUNG_BINH"))
+                .andExpect(jsonPath("$.data.phongBanXuLyId").value(8))
+                .andExpect(jsonPath("$.data.nguoiXuLyId").value(2))
+                .andExpect(jsonPath("$.data.trichYeu").value("Tom tat ngan"));
     }
 
     @Test
