@@ -1,5 +1,8 @@
 package com.example.med_office;
 
+import com.example.med_office.dto.RowboatChatResponse;
+import com.example.med_office.dto.RowboatMessage;
+import com.example.med_office.service.RowboatService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,7 +11,13 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,6 +29,9 @@ class MedOfficeApplicationTests {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private RowboatService rowboatService;
 
     @Test
     void contextLoads() {
@@ -549,5 +561,74 @@ class MedOfficeApplicationTests {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.message").value("So cong van da ton tai"));
+    }
+
+    @Test
+    void rowboatChatRequiresAuthenticatedSession() throws Exception {
+        mockMvc.perform(post("/api/rowboat/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "messages": [
+                                    {
+                                      "role": "user",
+                                      "content": "Xin chao"
+                                    }
+                                  ],
+                                  "state": null
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("Authentication is required"));
+    }
+
+    @Test
+    void rowboatChatReturnsStructuredResponse() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        RowboatMessage assistantMessage = new RowboatMessage();
+        assistantMessage.setRole("assistant");
+        assistantMessage.setContent("Chao ban, toi co the ho tro.");
+        assistantMessage.setAgenticResponseType("external");
+
+        RowboatChatResponse response = new RowboatChatResponse();
+        response.setMessages(List.of(assistantMessage));
+        response.setState(Map.of("last_agent_name", "MainAgent"));
+
+        when(rowboatService.chat(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/rowboat/chat")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "messages": [
+                                    {
+                                      "role": "user",
+                                      "content": "Xin chao"
+                                    }
+                                  ],
+                                  "state": null
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("AI chat completed successfully"))
+                .andExpect(jsonPath("$.data.messages[0].role").value("assistant"))
+                .andExpect(jsonPath("$.data.messages[0].content").value("Chao ban, toi co the ho tro."))
+                .andExpect(jsonPath("$.data.messages[0].agenticResponseType").value("external"))
+                .andExpect(jsonPath("$.data.state.last_agent_name").value("MainAgent"));
     }
 }

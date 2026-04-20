@@ -19,6 +19,10 @@ Spring Boot backend for `med_office`.
 DB_URL=jdbc:sqlserver://localhost:1433;databaseName=med-office;encrypt=true;trustServerCertificate=true
 DB_USERNAME=sa
 DB_PASSWORD=123456
+ROWBOAT_ENABLED=true
+ROWBOAT_HOST=https://app.rowboatlabs.com
+ROWBOAT_PROJECT_ID=your-rowboat-project-id
+ROWBOAT_API_KEY=your-rowboat-api-key
 ```
 
 2. Start the app:
@@ -79,8 +83,50 @@ Requires the session cookie returned by `login`.
 
 Requires the same session cookie.
 
+### Rowboat Chat
+
+`POST /api/rowboat/chat`
+
+Requires the same session cookie.
+
+This endpoint proxies the official Rowboat chat API from the backend so the API key stays on the server.
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tom tat cong van nay cho toi"
+    }
+  ],
+  "state": null
+}
+```
+
+Sample success payload:
+
+```json
+{
+  "code": 200,
+  "message": "Rowboat chat completed successfully",
+  "data": {
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "Toi da san sang ho tro.",
+        "agenticResponseType": "external"
+      }
+    ],
+    "state": {
+      "last_agent_name": "MainAgent"
+    }
+  }
+}
+```
+
 ## Notes
 
 - Runtime data is read from the database only.
 - No hardcoded runtime seed data is created by the application.
 - Test data is isolated in `src/test/resources/data.sql`.
+- Rowboat requires you to send the full conversation history in `messages` and the previous `state` on every next turn.
