@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.LoginRequest;
 import com.example.med_office.dto.LoginResponse;
+import com.example.med_office.dto.SignupRequest;
 import com.example.med_office.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -72,6 +73,20 @@ public class AuthApiController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Login successful",
                 authService.getLoginResponse(authentication.getName())
+        ));
+    }
+
+    @Operation(summary = "Sign up with username and password")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Signup successful"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request body"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Username already exists")
+    })
+    @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<LoginResponse>> signup(@Valid @RequestBody SignupRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Signup successful",
+                authService.signup(request)
         ));
     }
 

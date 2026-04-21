@@ -8,7 +8,7 @@ Spring Boot backend for `med_office`.
 - Spring Boot 4
 - Spring Security
 - Spring Data JPA
-- SQL Server
+- MySQL
 - Swagger/OpenAPI
 
 ## Run
@@ -16,16 +16,22 @@ Spring Boot backend for `med_office`.
 1. Create a `.env` file in the project root:
 
 ```properties
-DB_URL=jdbc:sqlserver://localhost:1433;databaseName=med-office;encrypt=true;trustServerCertificate=true
-DB_USERNAME=sa
-DB_PASSWORD=123456
+MED_OFFICE_DB_URL=jdbc:mysql://localhost:3306/med_office?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+MED_OFFICE_DB_USERNAME=root
+MED_OFFICE_DB_PASSWORD=Binh090801!
 ROWBOAT_ENABLED=true
 ROWBOAT_HOST=https://app.rowboatlabs.com
 ROWBOAT_PROJECT_ID=your-rowboat-project-id
 ROWBOAT_API_KEY=your-rowboat-api-key
 ```
 
-2. Start the app:
+2. Create MySQL schema:
+
+```powershell
+mysql -u root -p < src/main/resources/schema-mysql.sql
+```
+
+3. Start the app:
 
 ```powershell
 ./mvnw spring-boot:run
