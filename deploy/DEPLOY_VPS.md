@@ -55,7 +55,16 @@ Set at least:
 
 - `MED_OFFICE_DB_PASSWORD`
 - `AI_API_KEY` if you use the AI endpoint
-- `CORS_ALLOWED_ORIGINS`
+- `CORS_ALLOWED_ORIGINS` with the frontend URL, for example `http://192.168.54.100:5173`
+
+Do not set `CORS_ALLOWED_ORIGINS` to the backend URL such as `http://79.143.188.153`.
+The browser sends the frontend origin in the `Origin` header, so the backend must allow the frontend host and port.
+
+If your frontend host changes inside the same LAN, you can use patterns instead:
+
+```properties
+CORS_ALLOWED_ORIGIN_PATTERNS=http://192.168.*:5173,http://10.*:5173
+```
 
 For raw IP deployment without HTTPS, keep:
 
