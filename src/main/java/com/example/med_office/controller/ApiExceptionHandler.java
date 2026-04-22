@@ -13,6 +13,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -61,6 +62,13 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(ApiCode.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(ApiCode.UNAUTHORIZED, "Invalid username or password"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(405)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(405, "HTTP method is not supported for this endpoint"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
