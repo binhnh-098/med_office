@@ -12,6 +12,10 @@ on:
       - staging
       - main
 
+concurrency:
+  group: branch-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -20,11 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 26
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 26
+          java-version: 21
           cache: maven
 
       - name: Run tests
@@ -60,5 +64,26 @@ jobs:
       name: production
 
     steps:
-      - name: Production deploy placeholder
-        run: echo "Deploy production build from main branch"
+      - name: Deploy to production VPS over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR="${{ secrets.PROD_APP_DIR }}"
+            if [ -z "$APP_DIR" ]; then
+              APP_DIR="/home/ubuntu/med_office"
+            fi
+
+            cd "$APP_DIR"
+            git fetch origin main
+            git checkout main
+            git pull origin main
+            chmod +x mvnw
+            ./mvnw clean package -DskipTests
+            sudo systemctl restart med-office
+            sudo systemctl status med-office --no-pager

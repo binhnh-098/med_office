@@ -163,6 +163,33 @@ git pull
 sudo systemctl restart med-office
 ```
 
+## 11. Optional GitHub Actions auto-deploy on push to `main`
+
+This repository now contains a production deploy workflow in `.github/workflows/branch-pipeline.yml`.
+To make it work, add these GitHub Actions secrets in the repository settings:
+
+- `PROD_HOST`: for example `79.143.188.153`
+- `PROD_PORT`: usually `22`
+- `PROD_USERNAME`: for example `ubuntu`
+- `PROD_SSH_KEY`: private SSH key that can log in to the VPS
+- `PROD_APP_DIR`: for example `/home/ubuntu/med_office`
+
+The workflow will SSH into the VPS, run `git pull`, build the jar, and restart `med-office` after every push to `main`.
+
+The SSH user must be allowed to restart the service without an interactive password prompt. One simple approach is:
+
+```bash
+sudo visudo
+```
+
+Add a rule like:
+
+```text
+ubuntu ALL=NOPASSWD:/bin/systemctl restart med-office,/bin/systemctl status med-office
+```
+
+If you use a different deploy user, replace `ubuntu` with that username.
+
 ## Logs
 
 ```bash
