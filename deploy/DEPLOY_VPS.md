@@ -124,6 +124,9 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo systemctl reload nginx
 ```
 
+If you also deploy the frontend to the same VPS, use `deploy/nginx-fullstack-ip.conf` instead of `deploy/nginx-ip.conf`.
+That config serves the frontend from `/var/www/fe-med-office` and proxies `/api/` to Spring Boot on `127.0.0.1:8080`.
+
 ## 8. Open the firewall
 
 If UFW is enabled:
@@ -152,6 +155,54 @@ Then restart:
 
 ```bash
 sudo systemctl restart med-office
+```
+
+## 9a. Deploy the frontend on the same VPS
+
+Build the frontend on your local machine:
+
+```bash
+cd /path/to/fe-med-office
+npm install
+npm run build
+```
+
+The app already uses `/api/...` in development and can be served from the same origin in production.
+If you keep `VITE_API_IP_URL=http://79.143.188.153`, production requests still work because the frontend is hosted on the same host.
+
+Copy the built files to the VPS:
+
+```bash
+scp -r dist/* ubuntu@79.143.188.153:/tmp/fe-med-office-dist/
+```
+
+SSH into the VPS and install the frontend files:
+
+```bash
+ssh ubuntu@79.143.188.153
+sudo mkdir -p /var/www/fe-med-office
+sudo cp -r /tmp/fe-med-office-dist/* /var/www/fe-med-office/
+sudo chown -R www-data:www-data /var/www/fe-med-office
+```
+
+Switch Nginx to the fullstack config:
+
+```bash
+sudo cp /home/ubuntu/med_office/deploy/nginx-fullstack-ip.conf /etc/nginx/sites-available/med-office
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Now the public entry point is:
+
+```text
+http://79.143.188.153
+```
+
+And the backend stays available behind the same origin at:
+
+```text
+http://79.143.188.153/api/login
 ```
 
 ## 10. Update after new code

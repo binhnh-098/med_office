@@ -13,16 +13,28 @@ Spring Boot backend for `med_office`.
 
 ## Run
 
-1. Create a `.env` file in the project root:
+1. Create a `.env` file in the project root.
+You can start from `.env.example`:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Then set the real values:
 
 ```properties
 MED_OFFICE_DB_URL=jdbc:mysql://localhost:3306/med_office?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
 MED_OFFICE_DB_USERNAME=root
-MED_OFFICE_DB_PASSWORD=Binh090801!
-ROWBOAT_ENABLED=true
-ROWBOAT_HOST=https://app.rowboatlabs.com
-ROWBOAT_PROJECT_ID=your-rowboat-project-id
-ROWBOAT_API_KEY=your-rowboat-api-key
+MED_OFFICE_DB_PASSWORD=change_me
+
+AI_PROVIDER=nvidia
+AI_BASE_URL=https://integrate.api.nvidia.com/v1
+AI_API_KEY=your-nvidia-api-key
+AI_MODEL=meta/llama-3.1-70b-instruct
+AI_MOCK_ON_ERROR=false
+AI_CONNECT_TIMEOUT=5s
+AI_TIMEOUT_MS=30s
+AI_MAX_TOKENS=512
 ```
 
 2. Create MySQL schema:
@@ -89,13 +101,13 @@ Requires the session cookie returned by `login`.
 
 Requires the same session cookie.
 
-### Rowboat Chat
+### NVIDIA Chat
 
 `POST /api/rowboat/chat`
 
 Requires the same session cookie.
 
-This endpoint proxies the official Rowboat chat API from the backend so the API key stays on the server.
+This endpoint proxies the NVIDIA chat completions API from the backend so the API key stays on the server.
 
 ```json
 {
@@ -135,4 +147,5 @@ Sample success payload:
 - Runtime data is read from the database only.
 - No hardcoded runtime seed data is created by the application.
 - Test data is isolated in `src/test/resources/data.sql`.
-- Rowboat requires you to send the full conversation history in `messages` and the previous `state` on every next turn.
+- NVIDIA chat expects you to send the full conversation history in `messages`.
+- `AI_API_KEY` is required unless `AI_MOCK_ON_ERROR=true` and you accept mock fallback responses.
