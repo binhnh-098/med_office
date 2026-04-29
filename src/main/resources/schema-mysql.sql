@@ -2,6 +2,14 @@ CREATE DATABASE IF NOT EXISTS med_office
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
+CREATE USER IF NOT EXISTS 'med_office'@'localhost' IDENTIFIED BY 'MedOffice@2026!';
+ALTER USER 'med_office'@'localhost' IDENTIFIED BY 'MedOffice@2026!';
+GRANT ALL PRIVILEGES ON med_office.* TO 'med_office'@'localhost';
+
+CREATE USER IF NOT EXISTS 'med_office'@'127.0.0.1' IDENTIFIED BY 'MedOffice@2026!';
+ALTER USER 'med_office'@'127.0.0.1' IDENTIFIED BY 'MedOffice@2026!';
+GRANT ALL PRIVILEGES ON med_office.* TO 'med_office'@'127.0.0.1';
+
 USE med_office;
 
 CREATE TABLE IF NOT EXISTS chuc_vu (
@@ -47,6 +55,53 @@ CREATE TABLE IF NOT EXISTS nguoi_dung (
     UNIQUE KEY uk_nguoi_dung_ten_dang_nhap (ten_dang_nhap),
     KEY idx_nguoi_dung_trang_thai (trang_thai),
     KEY idx_nguoi_dung_chuc_vu_id (chuc_vu_id)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nguoi_dung_id BIGINT NULL,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    birth_date DATE NULL,
+    gender INT NULL,
+    identity_number VARCHAR(50) NULL,
+    social_insurance VARCHAR(50) NULL,
+    email VARCHAR(255) NULL,
+    phone VARCHAR(20) NULL,
+    degree VARCHAR(100) NULL,
+    specialty VARCHAR(255) NULL,
+    specialty_name VARCHAR(255) NULL,
+    academic_title VARCHAR(100) NULL,
+    academic_title_name VARCHAR(255) NULL,
+    certificate VARCHAR(100) NULL,
+    position_code VARCHAR(100) NULL,
+    position_name VARCHAR(255) NULL,
+    honor_title VARCHAR(255) NULL,
+    signing_pin VARCHAR(255) NULL,
+    signing_account VARCHAR(255) NULL,
+    signing_otp VARCHAR(255) NULL,
+    invoice_password VARCHAR(255) NULL,
+    avatar_image LONGTEXT NULL,
+    signature_image LONGTEXT NULL,
+    locked_from DATE NULL,
+    locked_to DATE NULL,
+    prescription_account VARCHAR(255) NULL,
+    prescription_password VARCHAR(255) NULL,
+    online_booking BIT(1) NOT NULL DEFAULT b'0',
+    active BIT(1) NOT NULL DEFAULT b'1',
+    note VARCHAR(2000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_ho_so_nhan_vien_code (code),
+    UNIQUE KEY uk_ho_so_nhan_vien_nguoi_dung_id (nguoi_dung_id),
+    KEY idx_ho_so_nhan_vien_name (name),
+    KEY idx_ho_so_nhan_vien_active (active),
+    KEY idx_ho_so_nhan_vien_specialty (specialty),
+    CONSTRAINT fk_ho_so_nhan_vien_nguoi_dung
+        FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung (id)
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;

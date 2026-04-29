@@ -11,19 +11,28 @@ Spring Boot backend for `med_office`.
 - MySQL
 - Swagger/OpenAPI
 
+## Environments
+
+This project supports two application environments:
+
+- `dev` for local development
+- `production` for VPS deployment
+
+`prod` is still supported as a legacy alias for backward compatibility, but new setups should use `production`.
+
 ## Run
 
 1. Create a `.env` file in the project root.
-You can start from `.env.example`:
+For local development, start from `.env.development.example`:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.development.example .env
 ```
 
 Then set the real values:
 
 ```properties
-MED_OFFICE_DB_URL=jdbc:mysql://localhost:3306/med_office?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+MED_OFFICE_DB_URL=jdbc:mysql://127.0.0.1:3306/med_office?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
 MED_OFFICE_DB_USERNAME=root
 MED_OFFICE_DB_PASSWORD=change_me
 
@@ -43,7 +52,7 @@ AI_MAX_TOKENS=512
 mysql -u root -p < src/main/resources/schema-mysql.sql
 ```
 
-3. Start the app:
+3. Start the app in development:
 
 ```powershell
 ./mvnw spring-boot:run
@@ -51,12 +60,14 @@ mysql -u root -p < src/main/resources/schema-mysql.sql
 
 The default profile is `dev`.
 
-For production:
+For production locally:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE='prod'
+$env:SPRING_PROFILES_ACTIVE='production'
 ./mvnw spring-boot:run
 ```
+
+For VPS deployment, use `deploy/.env.production.example` as the starting point for `.env`.
 
 ## Build And Test
 

@@ -100,6 +100,54 @@ class MedOfficeApplicationTests {
     }
 
     @Test
+    void linkedHoSoNhanVienProvidesProfileInfoInLoginResponse() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/ho-so-nhan-vien")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nguoiDungId": 2,
+                                  "code": "HSNV-ADMIN",
+                                  "name": "Nguyen Van A",
+                                  "email": "nguyenvana@example.com",
+                                  "phone": "0900000000",
+                                  "active": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nguoiDungId").value(2))
+                .andExpect(jsonPath("$.data.code").value("HSNV-ADMIN"));
+
+        mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "admin",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value("admin"))
+                .andExpect(jsonPath("$.data.hoSoNhanVienId").exists())
+                .andExpect(jsonPath("$.data.fullName").value("Nguyen Van A"))
+                .andExpect(jsonPath("$.data.email").value("nguyenvana@example.com"))
+                .andExpect(jsonPath("$.data.phoneNumber").value("0900000000"));
+    }
+
+    @Test
     void swaggerUiIsPublic() throws Exception {
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());

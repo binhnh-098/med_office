@@ -10,6 +10,9 @@ public class LoginResponse {
     @Schema(example = "1")
     private final Long id;
 
+    @Schema(example = "10")
+    private final Long hoSoNhanVienId;
+
     @Schema(example = "reception")
     private final String username;
 
@@ -39,6 +42,7 @@ public class LoginResponse {
 
     public LoginResponse(
             Long id,
+            Long hoSoNhanVienId,
             String username,
             String fullName,
             String status,
@@ -50,6 +54,7 @@ public class LoginResponse {
             LocalDateTime lastLoginAt
     ) {
         this.id = id;
+        this.hoSoNhanVienId = hoSoNhanVienId;
         this.username = username;
         this.fullName = fullName;
         this.status = status;
@@ -63,6 +68,10 @@ public class LoginResponse {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getHoSoNhanVienId() {
+        return hoSoNhanVienId;
     }
 
     public String getUsername() {

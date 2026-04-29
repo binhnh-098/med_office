@@ -51,11 +51,16 @@ cp deploy/.env.production.example .env
 nano .env
 ```
 
+Use the `production` Spring profile on the VPS.
+
 Set at least:
 
 - `MED_OFFICE_DB_PASSWORD`
 - `AI_API_KEY` if you use the AI endpoint
 - `CORS_ALLOWED_ORIGINS` with the frontend URL, for example `http://192.168.54.100:5173`
+
+Keep `MED_OFFICE_DB_URL` pointed at `127.0.0.1:3306` when Spring Boot and MySQL run on the same VPS.
+If you run the app from your local machine through an SSH tunnel, map a local port such as `3307` to the VPS MySQL socket and use `jdbc:mysql://127.0.0.1:3307/med_office...` locally instead.
 
 Do not set `CORS_ALLOWED_ORIGINS` to the backend URL such as `http://79.143.188.153`.
 The browser sends the frontend origin in the `Origin` header, so the backend must allow the frontend host and port.
