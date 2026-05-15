@@ -3,9 +3,12 @@ package com.example.med_office.controller;
 import java.util.Map;
 
 import com.example.med_office.dto.ApiResponse;
+import com.example.med_office.dto.DoctorMealDishCreateRequest;
+import com.example.med_office.dto.DoctorMealDishUpdateRequest;
 import com.example.med_office.service.DoctorMealsService;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,6 +49,51 @@ public class DoctorMealsController {
         String user = resolveUser(authentication, username);
         Map<String, Object> data = doctorMealsService.getWeekData(weekYear, weekNumber, user);
         return ResponseEntity.ok(ApiResponse.success("Lay du lieu tuan thanh cong", data));
+    }
+
+    @Operation(summary = "Lay danh sach tat ca mon an theo ngay")
+    @GetMapping(path = "/dishes-by-day", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDishesByDay(
+            @RequestParam int weekYear,
+            @RequestParam int weekNumber,
+            @RequestParam String dayOfWeek,
+            @RequestParam(required = false) String username,
+            Authentication authentication
+    ) {
+        String user = resolveUser(authentication, username);
+        Map<String, Object> data = doctorMealsService.getDishesByDay(weekYear, weekNumber, dayOfWeek, user);
+        return ResponseEntity.ok(ApiResponse.success("Lay danh sach mon an theo ngay thanh cong", data));
+    }
+
+    @Operation(summary = "Them moi mon an theo ngay va bua")
+    @PostMapping(path = "/dishes", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createDishes(
+            @Valid @RequestBody DoctorMealDishCreateRequest request,
+            Authentication authentication
+    ) {
+        Map<String, Object> data = doctorMealsService.createDishes(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Thêm món ăn thành công", data));
+    }
+
+    @Operation(summary = "Cap nhat mon an")
+    @PutMapping(path = "/dishes/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateDish(
+            @PathVariable Long id,
+            @Valid @RequestBody DoctorMealDishUpdateRequest request,
+            Authentication authentication
+    ) {
+        Map<String, Object> data = doctorMealsService.updateDish(id, authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Cap nhat mon an thanh cong", data));
+    }
+
+    @Operation(summary = "Xoa mon an")
+    @DeleteMapping(path = "/dishes/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Object>> deleteDish(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        doctorMealsService.deleteDish(id, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Xoa mon an thanh cong", null));
     }
 
     @Operation(summary = "Tao phieu dang ky suat an")

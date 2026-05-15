@@ -186,3 +186,41 @@ CREATE TABLE IF NOT EXISTS rowboat_chat_histories (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS doctor_meal_registrations (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    week_year INT NOT NULL,
+    week_number INT NOT NULL,
+    username VARCHAR(128) NOT NULL,
+    payload_json LONGTEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_doctor_meal_registrations_week_user (week_year, week_number, username),
+    KEY idx_doctor_meal_registrations_created_at (created_at)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS doctor_meal_dishes (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    week_year INT NOT NULL,
+    week_number INT NOT NULL,
+    day_of_week VARCHAR(32) NOT NULL,
+    meal_date DATE NOT NULL,
+    meal_id VARCHAR(32) NOT NULL,
+    meal_label VARCHAR(32) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    unit_price DECIMAL(12,2) NOT NULL,
+    calories INT NULL,
+    serving_time VARCHAR(32) NULL,
+    note VARCHAR(1000) NULL,
+    created_by VARCHAR(128) NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_doctor_meal_dishes_week_day (week_year, week_number, day_of_week),
+    KEY idx_doctor_meal_dishes_date_meal (meal_date, meal_id),
+    KEY idx_doctor_meal_dishes_created_at (created_at)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
