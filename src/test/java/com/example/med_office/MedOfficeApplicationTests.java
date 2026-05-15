@@ -2,6 +2,7 @@ package com.example.med_office;
 
 import com.example.med_office.dto.RowboatChatResponse;
 import com.example.med_office.dto.RowboatMessage;
+import com.example.med_office.repository.DoctorMealDishRepository;
 import com.example.med_office.service.RowboatService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,6 +31,9 @@ class MedOfficeApplicationTests {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private DoctorMealDishRepository doctorMealDishRepository;
 
     @MockitoBean
     private RowboatService rowboatService;
@@ -113,6 +118,7 @@ class MedOfficeApplicationTests {
                 .andReturn();
 
         MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        long dishCountBefore = doctorMealDishRepository.count();
 
         mockMvc.perform(post("/api/doctor-meals/registrations")
                         .session(session)
@@ -149,6 +155,9 @@ class MedOfficeApplicationTests {
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.weekYear").value(2026))
                 .andExpect(jsonPath("$.data.weekNumber").value(20));
+
+        long dishCountAfter = doctorMealDishRepository.count();
+        assertEquals(dishCountBefore, dishCountAfter);
     }
 
     @Test
