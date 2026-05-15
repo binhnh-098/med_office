@@ -201,20 +201,24 @@ public class DoctorMealsService {
     }
 
     @Transactional
-    public Map<String, Object> createRegistration(String principalName, JsonNode body) {
-        if (!body.isObject()) {
+    public Map<String, Object> createRegistration(String principalName, Map<String, Object> body) {
+        ObjectNode bodyNode = objectMapper.valueToTree(body);
+        if (!bodyNode.isObject()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Body must be a JSON object");
         }
-        JsonNode weekNode = body.path("week");
+        JsonNode weekNode = bodyNode.path("week");
         if (!weekNode.isObject()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or invalid week object");
         }
-        int weekYear = weekNode.path("year").asInt();
-        int weekNumber = weekNode.path("number").asInt();
+        int weekYear = requirePositiveInt(weekNode.get("year"), "week.year");
+        int weekNumber = requirePositiveInt(weekNode.get("number"), "week.number");
 
-        ObjectNode normalized = body.deepCopy();
-        ObjectNode requester = normalized.with("requester");
+        ObjectNode normalized = bodyNode.deepCopy();
+        ObjectNode requester = normalized.path("requester").isObject()
+                ? (ObjectNode) normalized.path("requester")
+                : objectMapper.createObjectNode();
         requester.put("username", principalName);
+        normalized.set("requester", requester);
 
         String payloadJson = normalized.toString();
 
@@ -569,6 +573,17 @@ public class DoctorMealsService {
         }
         if (value.compareTo(BigDecimal.ZERO) < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dish price and unitPrice must be greater than or equal to 0");
+        }
+        return value;
+    }
+
+    private int requirePositiveInt(JsonNode node, String fieldName) {
+        if (node == null || node.isNull() || !node.isIntegralNumber() || !node.canConvertToInt()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " must be a positive integer");
+        }
+        int value = node.asInt();
+        if (value <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " must be a positive integer");
         }
         return value;
     }

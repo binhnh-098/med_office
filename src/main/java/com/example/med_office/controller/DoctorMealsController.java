@@ -6,7 +6,6 @@ import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.DoctorMealDishCreateRequest;
 import com.example.med_office.dto.DoctorMealDishUpdateRequest;
 import com.example.med_office.service.DoctorMealsService;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -99,10 +98,10 @@ public class DoctorMealsController {
     @Operation(summary = "Tao phieu dang ky suat an")
     @PostMapping(path = "/registrations", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> createRegistration(
-            @RequestBody JsonNode body,
+            @RequestBody Map<String, Object> body,
             Authentication authentication
     ) {
-        if (body == null || body.isNull() || !body.has("week")) {
+        if (body == null || !body.containsKey("week")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing week in body");
         }
         String user = authentication.getName();

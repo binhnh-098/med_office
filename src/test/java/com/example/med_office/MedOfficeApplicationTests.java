@@ -100,6 +100,89 @@ class MedOfficeApplicationTests {
     }
 
     @Test
+    void createDoctorMealRegistrationNormalizesRequesterAndPersistsData() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/doctor-meals/registrations")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "week": {
+                                    "year": 2026,
+                                    "number": 20
+                                  },
+                                  "requester": "legacy-client-value",
+                                  "items": [
+                                    {
+                                      "dayOfWeek": "Thu 2",
+                                      "mealId": "lunch",
+                                      "dishes": [
+                                        {
+                                          "dishId": "dish-1",
+                                          "name": "Com tam",
+                                          "unitPrice": 40000,
+                                          "quantity": 1
+                                        }
+                                      ]
+                                    }
+                                  ],
+                                  "summary": {
+                                    "totalAmount": 40000
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("Luu dang ky thanh cong"))
+                .andExpect(jsonPath("$.data.id").exists())
+                .andExpect(jsonPath("$.data.weekYear").value(2026))
+                .andExpect(jsonPath("$.data.weekNumber").value(20));
+    }
+
+    @Test
+    void createDoctorMealRegistrationRejectsInvalidWeek() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/doctor-meals/registrations")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "week": {
+                                    "year": 2026
+                                  },
+                                  "items": []
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("week.number must be a positive integer"));
+    }
+
+    @Test
     void linkedHoSoNhanVienProvidesProfileInfoInLoginResponse() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
