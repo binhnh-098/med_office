@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -93,6 +94,7 @@ public class DoctorMealRegistrationRequest {
         private BigDecimal mealAmount;
 
         @Valid
+        @JsonAlias("dishes")
         private List<MealSnapshotRequest> mealSnapshots;
     }
 
