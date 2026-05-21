@@ -1,10 +1,13 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Getter
 @Schema(name = "CongVanDiResponse")
 public class CongVanDiResponse {
 
@@ -43,43 +46,7 @@ public class CongVanDiResponse {
         this.ngayCapNhat = ngayCapNhat;
     }
 
-    public Long getId() {
-        return id;
-    }
 
-    public String getSoCongVan() {
-        return soCongVan;
-    }
 
-    public String getTieuDe() {
-        return tieuDe;
-    }
 
-    public String getNoiDungTomTat() {
-        return noiDungTomTat;
-    }
-
-    public String getDonViNhan() {
-        return donViNhan;
-    }
-
-    public LocalDate getNgayBanHanh() {
-        return ngayBanHanh;
-    }
-
-    public Integer getNguoiKyId() {
-        return nguoiKyId;
-    }
-
-    public String getTrangThai() {
-        return trangThai;
-    }
-
-    public LocalDateTime getNgayTao() {
-        return ngayTao;
-    }
-
-    public LocalDateTime getNgayCapNhat() {
-        return ngayCapNhat;
-    }
 }

@@ -1,7 +1,10 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Getter
 @Schema(name = "ApiResponse")
 public class ApiResponse<T> {
 
@@ -29,17 +32,5 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> error(int code, String message) {
         return new ApiResponse<>(code, message, null);
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public T getData() {
-        return data;
     }
 }

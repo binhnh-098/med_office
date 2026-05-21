@@ -157,6 +157,6 @@ Sample success payload:
 
 - Runtime data is read from the database only.
 - No hardcoded runtime seed data is created by the application.
-- Test data is isolated in `src/test/resources/data.sql`.
+- Configure `MED_OFFICE_DB_URL`, `MED_OFFICE_DB_USERNAME`, and `MED_OFFICE_DB_PASSWORD` to choose the database used by the application.
 - NVIDIA chat expects you to send the full conversation history in `messages`.
 - `AI_API_KEY` is required unless `AI_MOCK_ON_ERROR=true` and you accept mock fallback responses.

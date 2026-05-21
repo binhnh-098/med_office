@@ -2,7 +2,10 @@ package com.example.med_office.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,12 +16,19 @@ import java.util.Set;
 
 import com.example.med_office.dto.DoctorMealDishCreateRequest;
 import com.example.med_office.dto.DoctorMealDishUpdateRequest;
+import com.example.med_office.dto.DoctorMealRegistrationRequest;
 import com.example.med_office.entity.DoctorMealDish;
 import com.example.med_office.entity.DoctorMealRegistration;
+import com.example.med_office.entity.DoctorMealRegistrationItem;
+import com.example.med_office.entity.DoctorMealRegistrationItemSnapshot;
 import com.example.med_office.repository.DoctorMealDishRepository;
+import com.example.med_office.repository.DoctorMealRegistrationItemRepository;
+import com.example.med_office.repository.DoctorMealRegistrationItemSnapshotRepository;
 import com.example.med_office.repository.DoctorMealRegistrationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,43 +48,39 @@ public class DoctorMealsService {
             "dinner", "Tối"
     );
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final List<DateTimeFormatter> SERVING_TIME_FORMATTERS = List.of(
+            DateTimeFormatter.ofPattern("H:mm"),
+            DateTimeFormatter.ofPattern("HH:mm"),
+            DateTimeFormatter.ofPattern("H:mm:ss"),
+            DateTimeFormatter.ofPattern("HH:mm:ss")
+    );
 
     private final DoctorMealDishRepository dishRepository;
     private final DoctorMealRegistrationRepository registrationRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final DoctorMealRegistrationItemRepository registrationItemRepository;
+    private final DoctorMealRegistrationItemSnapshotRepository registrationItemSnapshotRepository;
+    private final ObjectMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
 
     public DoctorMealsService(
             DoctorMealDishRepository dishRepository,
-            DoctorMealRegistrationRepository registrationRepository
+            DoctorMealRegistrationRepository registrationRepository,
+            DoctorMealRegistrationItemRepository registrationItemRepository,
+            DoctorMealRegistrationItemSnapshotRepository registrationItemSnapshotRepository
     ) {
         this.dishRepository = dishRepository;
         this.registrationRepository = registrationRepository;
+        this.registrationItemRepository = registrationItemRepository;
+        this.registrationItemSnapshotRepository = registrationItemSnapshotRepository;
     }
 
     public Map<String, Object> getWeekData(int weekYear, int weekNumber, String username) {
-        Optional<DoctorMealRegistration> latest = registrationRepository
-                .findFirstByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(weekYear, weekNumber, username);
-
         Map<String, Object> menuByDayMeal = emptyMenuByDayMeal();
-        Map<String, Map<String, Integer>> selections = new LinkedHashMap<>();
-
-        if (latest.isEmpty()) {
-            mergeSavedDishes(weekYear, weekNumber, menuByDayMeal);
-            Map<String, Object> body = new LinkedHashMap<>();
-            body.put("menuByDayMeal", menuByDayMeal);
-            body.put("selections", selections);
-            return body;
-        }
-
-        JsonNode root = readTree(latest.get().getPayloadJson());
-        mergeMenuAndSelectionsFromPayload(root, menuByDayMeal, selections);
         mergeSavedDishes(weekYear, weekNumber, menuByDayMeal);
 
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("week", Map.of("year", weekYear, "number", weekNumber));
         body.put("menuByDayMeal", menuByDayMeal);
-        body.put("selections", selections);
-        body.put("lastRegistrationId", latest.get().getId());
-        body.put("lastRegistrationAt", latest.get().getCreatedAt().toString());
+        body.put("selections", Map.of());
         return body;
     }
 
@@ -84,42 +90,8 @@ public class DoctorMealsService {
         }
         String normalizedDayOfWeek = dayOfWeek.trim();
 
-        Optional<DoctorMealRegistration> latest = registrationRepository
-                .findFirstByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(weekYear, weekNumber, username);
-
         Map<String, Object> meals = emptyMeals();
         List<Map<String, Object>> items = new ArrayList<>();
-        int totalQuantity = 0;
-
-        if (latest.isPresent()) {
-            JsonNode root = readTree(latest.get().getPayloadJson());
-            JsonNode itemsNode = root.path("items");
-            if (itemsNode.isArray()) {
-                for (JsonNode item : itemsNode) {
-                    String itemDay = item.path("dayOfWeek").asText("");
-                    if (!normalizedDayOfWeek.equalsIgnoreCase(itemDay.trim())) {
-                        continue;
-                    }
-
-                    String mealId = item.path("mealId").asText("");
-                    JsonNode dishesNode = item.path("dishes");
-                    if (!dishesNode.isArray()) {
-                        continue;
-                    }
-
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> mealDishes = (List<Map<String, Object>>) meals
-                            .computeIfAbsent(mealId, k -> new ArrayList<Map<String, Object>>());
-
-                    for (JsonNode dish : dishesNode) {
-                        Map<String, Object> dishItem = toDishByDayItem(normalizedDayOfWeek, mealId, dish);
-                        items.add(dishItem);
-                        mealDishes.add(dishItem);
-                        totalQuantity += dish.path("quantity").asInt(0);
-                    }
-                }
-            }
-        }
 
         for (DoctorMealDish dish : dishRepository.findByWeekYearAndWeekNumberAndDayOfWeekOrderByMealIdAscIdAsc(
                 weekYear,
@@ -142,11 +114,7 @@ public class DoctorMealsService {
         out.put("meals", meals);
         out.put("items", items);
         out.put("totalDishes", items.size());
-        out.put("totalQuantity", totalQuantity);
-        latest.ifPresent(row -> {
-            out.put("lastRegistrationId", row.getId());
-            out.put("lastRegistrationAt", row.getCreatedAt().toString());
-        });
+        out.put("totalQuantity", 0);
         return out;
     }
 
@@ -201,40 +169,74 @@ public class DoctorMealsService {
     }
 
     @Transactional
-    public Map<String, Object> createRegistration(String principalName, Map<String, Object> body) {
-        ObjectNode bodyNode = objectMapper.valueToTree(body);
-        if (!bodyNode.isObject()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Body must be a JSON object");
-        }
-        JsonNode weekNode = bodyNode.path("week");
-        if (!weekNode.isObject()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or invalid week object");
-        }
-        int weekYear = requirePositiveInt(weekNode.get("year"), "week.year");
-        int weekNumber = requirePositiveInt(weekNode.get("number"), "week.number");
-
-        ObjectNode normalized = bodyNode.deepCopy();
-        ObjectNode requester = normalized.path("requester").isObject()
-                ? (ObjectNode) normalized.path("requester")
-                : objectMapper.createObjectNode();
-        requester.put("username", principalName);
-        normalized.set("requester", requester);
-
-        String payloadJson = normalized.toString();
+    public Map<String, Object> createRegistration(String principalName, DoctorMealRegistrationRequest request) {
+        DoctorMealRegistrationRequest.WeekRequest week = request.getWeek();
+        DoctorMealRegistrationRequest.RequesterRequest requester = request.getRequester();
+        DoctorMealRegistrationRequest.SummaryRequest summary = request.getSummary();
 
         DoctorMealRegistration entity = new DoctorMealRegistration();
-        entity.setWeekYear(weekYear);
-        entity.setWeekNumber(weekNumber);
+        String requesterUsername = requester != null && blankToNull(requester.getUsername()) != null
+                ? requester.getUsername().trim()
+                : principalName;
+        entity.setWeekYear(week.getYear());
+        entity.setWeekNumber(week.getNumber());
+        entity.setWeekLabel(blankToNull(week.getLabel()));
+        entity.setWeekStartDate(week.getStartDate());
+        entity.setWeekEndDate(week.getEndDate());
         entity.setUsername(principalName);
-        entity.setPayloadJson(payloadJson);
+        entity.setRequesterUsername(requesterUsername);
+        if (requester != null) {
+            entity.setRequesterFullName(blankToNull(requester.getFullName()));
+            entity.setRequesterDepartment(blankToNull(requester.getDepartment()));
+            entity.setRequesterRole(blankToNull(requester.getRole()));
+        }
+
+        int totalQuantity = summary != null && summary.getTotalQuantity() != null ? summary.getTotalQuantity() : 0;
+        BigDecimal totalAmount = summary != null && summary.getTotalAmount() != null ? summary.getTotalAmount() : BigDecimal.ZERO;
+
+        for (DoctorMealRegistrationRequest.ItemRequest requestItem : request.getItems()) {
+            DoctorMealRegistrationItem item = new DoctorMealRegistrationItem();
+            item.setDate(requestItem.getDate());
+            item.setDayOfWeek(blankToNull(requestItem.getDayOfWeek()));
+            item.setMealId(blankToNull(requestItem.getMealId()));
+            item.setMealLabel(blankToNull(requestItem.getMealLabel()));
+            item.setMealQuantity(nonNegativeOrZero(requestItem.getMealQuantity()));
+            item.setMealAmount(nonNullAmount(requestItem.getMealAmount()));
+
+            List<DoctorMealRegistrationRequest.MealSnapshotRequest> snapshots = requestItem.getMealSnapshots();
+            if (snapshots == null || snapshots.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Each registration item must have mealSnapshots");
+            }
+            for (DoctorMealRegistrationRequest.MealSnapshotRequest snapshotRequest : snapshots) {
+                DoctorMealRegistrationItemSnapshot snapshot = new DoctorMealRegistrationItemSnapshot();
+                snapshot.setName(normalizeRequired(snapshotRequest.getName()));
+                snapshot.setServingTime(blankToNull(snapshotRequest.getServingTime()));
+                snapshot.setQuantity(nonNegativeOrZero(snapshotRequest.getQuantity()));
+                snapshot.setUnitPrice(nonNullAmount(snapshotRequest.getUnitPrice()));
+                snapshot.setLineTotal(nonNullAmount(snapshotRequest.getLineTotal()));
+                item.addMealSnapshot(snapshot);
+            }
+
+            entity.addItem(item);
+            if (summary == null) {
+                totalQuantity += item.getMealQuantity();
+                totalAmount = totalAmount.add(item.getMealAmount());
+            }
+        }
+
+        entity.setTotalQuantity(totalQuantity);
+        entity.setTotalAmount(totalAmount);
+        entity.setPayloadJson(objectMapper.valueToTree(request).toString());
 
         DoctorMealRegistration saved = registrationRepository.save(entity);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", saved.getId());
         data.put("createdAt", saved.getCreatedAt().toString());
-        data.put("weekYear", weekYear);
-        data.put("weekNumber", weekNumber);
+        data.put("weekYear", saved.getWeekYear());
+        data.put("weekNumber", saved.getWeekNumber());
+        data.put("totalQuantity", saved.getTotalQuantity());
+        data.put("totalAmount", saved.getTotalAmount());
         return data;
     }
 
@@ -301,8 +303,7 @@ public class DoctorMealsService {
             int limit,
             int offset
     ) {
-        List<DoctorMealRegistration> all = registrationRepository
-                .findByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(weekYear, weekNumber, username);
+        List<DoctorMealRegistration> all = findRegistrations(weekYear, weekNumber, username);
 
         int from = Math.min(Math.max(offset, 0), all.size());
         int to = Math.min(from + Math.min(Math.max(limit, 1), 200), all.size());
@@ -322,33 +323,17 @@ public class DoctorMealsService {
     }
 
     public Map<String, Object> getRegistrationDetail(Long id, String username) {
-        DoctorMealRegistration row = registrationRepository.findByIdAndUsername(id, username)
+        DoctorMealRegistration row = findRegistrationByIdAndUser(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration not found"));
 
-        JsonNode root = readTree(row.getPayloadJson());
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("id", row.getId());
         detail.put("createdAt", row.getCreatedAt().toString());
-
-        root.fields().forEachRemaining(entry -> {
-            if (!"items".equals(entry.getKey())) {
-                detail.put(entry.getKey(), objectMapper.convertValue(entry.getValue(), Object.class));
-            }
-        });
-
-        JsonNode itemsNode = root.path("items");
-        List<Map<String, Object>> itemsWithIds = new ArrayList<>();
-        int index = 1;
-        if (itemsNode.isArray()) {
-            for (JsonNode item : itemsNode) {
-                Map<String, Object> itemMap = objectMapper.convertValue(item, Map.class);
-                itemMap.putIfAbsent("id", "line-" + index);
-                itemsWithIds.add(itemMap);
-                index++;
-            }
-        }
-        detail.put("items", itemsWithIds);
-
+        detail.put("week", toWeekMap(row));
+        detail.put("requester", toRequesterMap(row));
+        detail.put("summary", toSummaryMap(row));
+        List<Map<String, Object>> items = toRegistrationItemResponses(row);
+        detail.put("items", items.isEmpty() ? toLegacyRegistrationItemResponses(row) : items);
         return detail;
     }
 
@@ -381,12 +366,13 @@ public class DoctorMealsService {
         dishItem.put("servingTime", dish.getServingTime());
         dishItem.put("note", dish.getNote());
         dishItem.put("quantity", 0);
+        dishItem.put("canDelete", canModifyDish(dish));
         return dishItem;
     }
 
     @Transactional
     public void deleteRegistration(Long id, String username) {
-        DoctorMealRegistration row = registrationRepository.findByIdAndUsername(id, username)
+        DoctorMealRegistration row = findRegistrationByIdAndUser(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration not found"));
         registrationRepository.delete(row);
     }
@@ -394,28 +380,67 @@ public class DoctorMealsService {
     @Transactional
     public void deleteDish(Long id, String principalName) {
         DoctorMealDish dish = getOwnedDish(id, principalName);
-        ensureDishDateIsEditable(dish.getDate(), "Cannot delete dishes from a past date");
+        ensureDishCanBeDeleted(dish);
         dishRepository.delete(dish);
     }
 
+    @Transactional
+    public Map<String, Object> deleteRegistrationItemDish(
+            Long registrationId,
+            Long itemId,
+            Long dishId,
+            String username
+    ) {
+        DoctorMealRegistration registration = findRegistrationByIdAndUser(registrationId, username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration not found"));
+
+        DoctorMealRegistrationItem item = registrationItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration item not found"));
+        if (!registration.getId().equals(item.getRegistration().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration item not found");
+        }
+
+        DoctorMealRegistrationItemSnapshot snapshot = registrationItemSnapshotRepository.findById(dishId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration dish not found"));
+        if (!item.getId().equals(snapshot.getRegistrationItem().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration dish not found");
+        }
+
+        registrationItemSnapshotRepository.delete(snapshot);
+
+        List<DoctorMealRegistrationItemSnapshot> remainingSnapshots = registrationItemSnapshotRepository
+                .findByRegistrationItemIdOrderByIdAsc(item.getId())
+                .stream()
+                .filter(row -> !row.getId().equals(dishId))
+                .toList();
+        boolean itemDeleted = remainingSnapshots.isEmpty();
+        if (itemDeleted) {
+            registrationItemRepository.delete(item);
+        } else {
+            updateItemTotals(item, remainingSnapshots);
+            registrationItemRepository.save(item);
+        }
+
+        updateRegistrationTotals(registration);
+        syncRegistrationPayloadFromCurrentItems(registration);
+        registrationRepository.save(registration);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("registrationId", registration.getId());
+        data.put("itemId", item.getId());
+        data.put("dishId", dishId);
+        data.put("itemDeleted", itemDeleted);
+        data.put("summary", toSummaryMap(registration));
+        return data;
+    }
+
     private Map<String, Object> toListItem(DoctorMealRegistration row) {
-        JsonNode root = readTree(row.getPayloadJson());
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("id", row.getId());
         item.put("createdAt", row.getCreatedAt().toString());
-
-        JsonNode requester = root.path("requester");
-        Map<String, Object> requesterMap = objectMapper.convertValue(requester, Map.class);
-        item.put("requester", requesterMap != null ? requesterMap : Map.of());
-
-        JsonNode summary = root.path("summary");
-        Map<String, Object> summaryMap = objectMapper.convertValue(summary, Map.class);
-        item.put("summary", summaryMap != null ? summaryMap : Map.of());
-
-        JsonNode week = root.path("week");
-        Map<String, Object> weekMap = objectMapper.convertValue(week, Map.class);
-        item.put("week", weekMap != null ? weekMap : Map.of());
-
+        item.put("requester", toRequesterMap(row));
+        item.put("summary", toSummaryMap(row));
+        item.put("week", toWeekMap(row));
         return item;
     }
 
@@ -428,6 +453,7 @@ public class DoctorMealsService {
         item.put("calories", dish.getCalories());
         item.put("servingTime", dish.getServingTime());
         item.put("note", dish.getNote());
+        item.put("canDelete", canModifyDish(dish));
         return item;
     }
 
@@ -451,6 +477,179 @@ public class DoctorMealsService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot modify another user's dish");
         }
         return dish;
+    }
+
+    private List<DoctorMealRegistration> findRegistrations(int weekYear, int weekNumber, String username) {
+        List<DoctorMealRegistration> rows = registrationRepository
+                .findByWeekYearAndWeekNumberAndRequesterUsernameOrderByIdDesc(weekYear, weekNumber, username);
+        if (!rows.isEmpty()) {
+            return rows;
+        }
+        return registrationRepository.findByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(weekYear, weekNumber, username);
+    }
+
+    private Optional<DoctorMealRegistration> findRegistrationByIdAndUser(Long id, String username) {
+        Optional<DoctorMealRegistration> row = registrationRepository.findByIdAndRequesterUsername(id, username);
+        if (row.isPresent()) {
+            return row;
+        }
+        return registrationRepository.findByIdAndUsername(id, username);
+    }
+
+    private int nonNegativeOrZero(Integer value) {
+        return value == null ? 0 : Math.max(value, 0);
+    }
+
+    private BigDecimal nonNullAmount(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private Map<String, Object> toWeekMap(DoctorMealRegistration row) {
+        Map<String, Object> week = new LinkedHashMap<>();
+        week.put("year", row.getWeekYear());
+        week.put("number", row.getWeekNumber());
+        week.put("label", row.getWeekLabel());
+        week.put("startDate", row.getWeekStartDate() == null ? null : row.getWeekStartDate().toString());
+        week.put("endDate", row.getWeekEndDate() == null ? null : row.getWeekEndDate().toString());
+        return week;
+    }
+
+    private Map<String, Object> toRequesterMap(DoctorMealRegistration row) {
+        Map<String, Object> requester = new LinkedHashMap<>();
+        requester.put("username", row.getRequesterUsername() != null ? row.getRequesterUsername() : row.getUsername());
+        requester.put("fullName", row.getRequesterFullName());
+        requester.put("department", row.getRequesterDepartment());
+        requester.put("role", row.getRequesterRole());
+        return requester;
+    }
+
+    private Map<String, Object> toSummaryMap(DoctorMealRegistration row) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("totalQuantity", row.getTotalQuantity());
+        summary.put("totalAmount", row.getTotalAmount());
+        return summary;
+    }
+
+    private List<Map<String, Object>> toRegistrationItemResponses(DoctorMealRegistration row) {
+        List<Map<String, Object>> responses = new ArrayList<>();
+        for (DoctorMealRegistrationItem item : registrationItemRepository.findByRegistrationIdOrderByIdAsc(row.getId())) {
+            Map<String, Object> itemMap = new LinkedHashMap<>();
+            itemMap.put("id", item.getId());
+            itemMap.put("date", item.getDate().toString());
+            itemMap.put("dayOfWeek", item.getDayOfWeek());
+            itemMap.put("mealId", item.getMealId());
+            itemMap.put("mealLabel", item.getMealLabel());
+            itemMap.put("mealQuantity", item.getMealQuantity());
+            itemMap.put("mealAmount", item.getMealAmount());
+            itemMap.put("mealSnapshots", toSnapshotResponses(item));
+            responses.add(itemMap);
+        }
+        return responses;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> toLegacyRegistrationItemResponses(DoctorMealRegistration row) {
+        List<Map<String, Object>> responses = new ArrayList<>();
+        JsonNode root = readTree(row.getPayloadJson());
+        JsonNode itemsNode = root.path("items");
+        if (!itemsNode.isArray()) {
+            return responses;
+        }
+
+        int index = 1;
+        for (JsonNode itemNode : itemsNode) {
+            Map<String, Object> itemMap = objectMapper.convertValue(itemNode, Map.class);
+            itemMap.putIfAbsent("id", "legacy-line-" + index);
+
+            Object mealSnapshots = itemMap.get("mealSnapshots");
+            itemMap.put("mealSnapshots", mealSnapshots == null ? List.of() : mealSnapshots);
+            responses.add(itemMap);
+            index++;
+        }
+        return responses;
+    }
+
+    private List<Map<String, Object>> toSnapshotResponses(DoctorMealRegistrationItem item) {
+        List<Map<String, Object>> responses = new ArrayList<>();
+        for (DoctorMealRegistrationItemSnapshot snapshot : registrationItemSnapshotRepository
+                .findByRegistrationItemIdOrderByIdAsc(item.getId())) {
+            Map<String, Object> snapshotMap = new LinkedHashMap<>();
+            snapshotMap.put("id", snapshot.getId());
+            snapshotMap.put("name", snapshot.getName());
+            snapshotMap.put("servingTime", snapshot.getServingTime());
+            snapshotMap.put("quantity", snapshot.getQuantity());
+            snapshotMap.put("unitPrice", snapshot.getUnitPrice());
+            snapshotMap.put("lineTotal", snapshot.getLineTotal());
+            responses.add(snapshotMap);
+        }
+        return responses;
+    }
+
+    private void updateItemTotals(
+            DoctorMealRegistrationItem item,
+            List<DoctorMealRegistrationItemSnapshot> snapshots
+    ) {
+        int mealQuantity = 0;
+        BigDecimal mealAmount = BigDecimal.ZERO;
+        for (DoctorMealRegistrationItemSnapshot snapshot : snapshots) {
+            mealQuantity += nonNegativeOrZero(snapshot.getQuantity());
+            mealAmount = mealAmount.add(nonNullAmount(snapshot.getLineTotal()));
+        }
+        item.setMealQuantity(mealQuantity);
+        item.setMealAmount(mealAmount);
+    }
+
+    private void updateRegistrationTotals(DoctorMealRegistration registration) {
+        int totalQuantity = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (DoctorMealRegistrationItem item : registrationItemRepository
+                .findByRegistrationIdOrderByIdAsc(registration.getId())) {
+            totalQuantity += nonNegativeOrZero(item.getMealQuantity());
+            totalAmount = totalAmount.add(nonNullAmount(item.getMealAmount()));
+        }
+        registration.setTotalQuantity(totalQuantity);
+        registration.setTotalAmount(totalAmount);
+    }
+
+    private void syncRegistrationPayloadFromCurrentItems(DoctorMealRegistration registration) {
+        JsonNode existingPayload = readTree(registration.getPayloadJson());
+        ObjectNode root = existingPayload.isObject()
+                ? ((ObjectNode) existingPayload).deepCopy()
+                : objectMapper.createObjectNode();
+
+        ObjectNode summary = root.withObject("/summary");
+        summary.put("totalQuantity", registration.getTotalQuantity());
+        summary.put("totalAmount", registration.getTotalAmount());
+
+        ArrayNode items = objectMapper.createArrayNode();
+        for (DoctorMealRegistrationItem item : registrationItemRepository
+                .findByRegistrationIdOrderByIdAsc(registration.getId())) {
+            ObjectNode itemNode = objectMapper.createObjectNode();
+            itemNode.put("id", item.getId());
+            itemNode.put("date", item.getDate().toString());
+            itemNode.put("dayOfWeek", item.getDayOfWeek());
+            itemNode.put("mealId", item.getMealId());
+            itemNode.put("mealLabel", item.getMealLabel());
+            itemNode.put("mealQuantity", item.getMealQuantity());
+            itemNode.put("mealAmount", item.getMealAmount());
+
+            ArrayNode snapshots = objectMapper.createArrayNode();
+            for (DoctorMealRegistrationItemSnapshot snapshot : registrationItemSnapshotRepository
+                    .findByRegistrationItemIdOrderByIdAsc(item.getId())) {
+                ObjectNode snapshotNode = objectMapper.createObjectNode();
+                snapshotNode.put("id", snapshot.getId());
+                snapshotNode.put("name", snapshot.getName());
+                snapshotNode.put("servingTime", snapshot.getServingTime());
+                snapshotNode.put("quantity", snapshot.getQuantity());
+                snapshotNode.put("unitPrice", snapshot.getUnitPrice());
+                snapshotNode.put("lineTotal", snapshot.getLineTotal());
+                snapshots.add(snapshotNode);
+            }
+            itemNode.set("mealSnapshots", snapshots);
+            items.add(itemNode);
+        }
+        root.set("items", items);
+        registration.setPayloadJson(root.toString());
     }
 
     private void ensureDishDateIsEditable(LocalDate date, String message) {
@@ -554,6 +753,8 @@ public class DoctorMealsService {
             dishObj.put("calories", dish.getCalories());
             dishObj.put("servingTime", dish.getServingTime());
             dishObj.put("note", dish.getNote());
+            dishObj.put("date", dish.getDate().toString());
+            dishObj.put("canDelete", canModifyDish(dish));
             dishList.add(dishObj);
         }
     }
@@ -586,6 +787,40 @@ public class DoctorMealsService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " must be a positive integer");
         }
         return value;
+    }
+
+    private void ensureDishCanBeDeleted(DoctorMealDish dish) {
+        if (!canModifyDish(dish)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete dishes from a past time");
+        }
+    }
+
+    private boolean canModifyDish(DoctorMealDish dish) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        LocalDate date = dish.getDate();
+        if (date.isBefore(today)) {
+            return false;
+        }
+        if (date.isAfter(today)) {
+            return true;
+        }
+        LocalTime servingTime = parseServingTime(dish.getServingTime());
+        return servingTime == null || servingTime.isAfter(LocalTime.now(BUSINESS_ZONE));
+    }
+
+    private LocalTime parseServingTime(String value) {
+        String normalized = blankToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        for (DateTimeFormatter formatter : SERVING_TIME_FORMATTERS) {
+            try {
+                return LocalTime.parse(normalized, formatter);
+            } catch (DateTimeParseException ignored) {
+                // Try the next supported serving time format.
+            }
+        }
+        return null;
     }
 
     private String normalizeRequired(String value) {

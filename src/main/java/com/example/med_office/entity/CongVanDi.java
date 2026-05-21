@@ -1,5 +1,8 @@
 package com.example.med_office.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +15,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "cong_van_di")
 public class CongVanDi {
@@ -61,85 +66,5 @@ public class CongVanDi {
     @PreUpdate
     public void preUpdate() {
         ngayCapNhat = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getSoCongVan() {
-        return soCongVan;
-    }
-
-    public void setSoCongVan(String soCongVan) {
-        this.soCongVan = soCongVan;
-    }
-
-    public String getTieuDe() {
-        return tieuDe;
-    }
-
-    public void setTieuDe(String tieuDe) {
-        this.tieuDe = tieuDe;
-    }
-
-    public String getNoiDungTomTat() {
-        return noiDungTomTat;
-    }
-
-    public void setNoiDungTomTat(String noiDungTomTat) {
-        this.noiDungTomTat = noiDungTomTat;
-    }
-
-    public String getDonViNhan() {
-        return donViNhan;
-    }
-
-    public void setDonViNhan(String donViNhan) {
-        this.donViNhan = donViNhan;
-    }
-
-    public LocalDate getNgayBanHanh() {
-        return ngayBanHanh;
-    }
-
-    public void setNgayBanHanh(LocalDate ngayBanHanh) {
-        this.ngayBanHanh = ngayBanHanh;
-    }
-
-    public Integer getNguoiKyId() {
-        return nguoiKyId;
-    }
-
-    public void setNguoiKyId(Integer nguoiKyId) {
-        this.nguoiKyId = nguoiKyId;
-    }
-
-    public String getTrangThai() {
-        return trangThai;
-    }
-
-    public void setTrangThai(String trangThai) {
-        this.trangThai = trangThai;
-    }
-
-    public LocalDateTime getNgayTao() {
-        return ngayTao;
-    }
-
-    public void setNgayTao(LocalDateTime ngayTao) {
-        this.ngayTao = ngayTao;
-    }
-
-    public LocalDateTime getNgayCapNhat() {
-        return ngayCapNhat;
-    }
-
-    public void setNgayCapNhat(LocalDateTime ngayCapNhat) {
-        this.ngayCapNhat = ngayCapNhat;
     }
 }

@@ -1,7 +1,10 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public class PagedResponse<T> {
 
     private final List<T> items;
@@ -30,31 +33,5 @@ public class PagedResponse<T> {
         this.hasPrevious = hasPrevious;
     }
 
-    public List<T> getItems() {
-        return items;
-    }
 
-    public int getPage() {
-        return page;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public long getTotalElements() {
-        return totalElements;
-    }
-
-    public int getTotalPages() {
-        return totalPages;
-    }
-
-    public boolean getHasNext() {
-        return hasNext;
-    }
-
-    public boolean getHasPrevious() {
-        return hasPrevious;
-    }
 }

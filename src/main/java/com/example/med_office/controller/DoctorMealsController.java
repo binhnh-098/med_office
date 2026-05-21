@@ -5,6 +5,7 @@ import java.util.Map;
 import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.DoctorMealDishCreateRequest;
 import com.example.med_office.dto.DoctorMealDishUpdateRequest;
+import com.example.med_office.dto.DoctorMealRegistrationRequest;
 import com.example.med_office.service.DoctorMealsService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -98,14 +99,11 @@ public class DoctorMealsController {
     @Operation(summary = "Tao phieu dang ky suat an")
     @PostMapping(path = "/registrations", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> createRegistration(
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody DoctorMealRegistrationRequest request,
             Authentication authentication
     ) {
-        if (body == null || !body.containsKey("week")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing week in body");
-        }
         String user = authentication.getName();
-        Map<String, Object> data = doctorMealsService.createRegistration(user, body);
+        Map<String, Object> data = doctorMealsService.createRegistration(user, request);
         return ResponseEntity.ok(ApiResponse.success("Luu dang ky thanh cong", data));
     }
 
@@ -142,6 +140,23 @@ public class DoctorMealsController {
     ) {
         doctorMealsService.deleteRegistration(id, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Da huy dang ky", null));
+    }
+
+    @Operation(summary = "Huy mot mon an trong phieu dang ky")
+    @DeleteMapping(path = "/registrations/{registrationId}/items/{itemId}/dishes/{dishId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deleteRegistrationItemDish(
+            @PathVariable Long registrationId,
+            @PathVariable Long itemId,
+            @PathVariable Long dishId,
+            Authentication authentication
+    ) {
+        Map<String, Object> data = doctorMealsService.deleteRegistrationItemDish(
+                registrationId,
+                itemId,
+                dishId,
+                authentication.getName()
+        );
+        return ResponseEntity.ok(ApiResponse.success("Da huy mon an", data));
     }
 
     private static String resolveUser(Authentication authentication, String requestedUsername) {

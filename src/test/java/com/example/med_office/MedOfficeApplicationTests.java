@@ -4,6 +4,8 @@ import com.example.med_office.dto.RowboatChatResponse;
 import com.example.med_office.dto.RowboatMessage;
 import com.example.med_office.repository.DoctorMealDishRepository;
 import com.example.med_office.service.RowboatService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +22,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,6 +37,9 @@ class MedOfficeApplicationTests {
 
     @Autowired
     private DoctorMealDishRepository doctorMealDishRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private RowboatService rowboatService;
@@ -189,6 +195,104 @@ class MedOfficeApplicationTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("week.number must be a positive integer"));
+    }
+
+    @Test
+    void deleteDoctorMealRegistrationItemDishRemovesOnlySelectedDish() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "reception",
+                                  "password": "clinic123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        MvcResult createResult = mockMvc.perform(post("/api/doctor-meals/registrations")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "week": {
+                                    "year": 2026,
+                                    "number": 77
+                                  },
+                                  "requester": {
+                                    "username": "reception",
+                                    "fullName": "Reception Staff"
+                                  },
+                                  "items": [
+                                    {
+                                      "date": "2026-05-25",
+                                      "dayOfWeek": "Thu 2",
+                                      "mealId": "lunch",
+                                      "mealLabel": "Trua",
+                                      "mealQuantity": 3,
+                                      "mealAmount": 110000,
+                                      "mealSnapshots": [
+                                        {
+                                          "name": "Com tam",
+                                          "servingTime": "11:30",
+                                          "quantity": 1,
+                                          "unitPrice": 30000,
+                                          "lineTotal": 30000
+                                        },
+                                        {
+                                          "name": "Pho bo",
+                                          "servingTime": "11:30",
+                                          "quantity": 2,
+                                          "unitPrice": 40000,
+                                          "lineTotal": 80000
+                                        }
+                                      ]
+                                    }
+                                  ],
+                                  "summary": {
+                                    "totalQuantity": 3,
+                                    "totalAmount": 110000
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode createBody = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        long registrationId = createBody.path("data").path("id").asLong();
+
+        MvcResult detailResult = mockMvc.perform(get("/api/doctor-meals/registrations/{id}", registrationId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode detailBody = objectMapper.readTree(detailResult.getResponse().getContentAsString());
+        long itemId = detailBody.path("data").path("items").get(0).path("id").asLong();
+        long dishId = detailBody.path("data").path("items").get(0).path("mealSnapshots").get(0).path("id").asLong();
+
+        mockMvc.perform(delete("/api/doctor-meals/registrations/{registrationId}/items/{itemId}/dishes/{dishId}",
+                        registrationId,
+                        itemId,
+                        dishId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("Da huy mon an"))
+                .andExpect(jsonPath("$.data.itemDeleted").value(false))
+                .andExpect(jsonPath("$.data.summary.totalQuantity").value(2))
+                .andExpect(jsonPath("$.data.summary.totalAmount").value(80000));
+
+        mockMvc.perform(get("/api/doctor-meals/registrations/{id}", registrationId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.totalQuantity").value(2))
+                .andExpect(jsonPath("$.data.summary.totalAmount").value(80000))
+                .andExpect(jsonPath("$.data.items[0].mealQuantity").value(2))
+                .andExpect(jsonPath("$.data.items[0].mealAmount").value(80000))
+                .andExpect(jsonPath("$.data.items[0].mealSnapshots.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].mealSnapshots[0].name").value("Pho bo"));
     }
 
     @Test

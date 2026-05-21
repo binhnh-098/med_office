@@ -6,6 +6,7 @@ import java.util.Map;
 import com.example.med_office.dto.ApiCode;
 import com.example.med_office.dto.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -85,10 +86,33 @@ public class ApiExceptionHandler {
                 .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Request data violates database constraints"));
     }
 
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDatabaseAccessException(DataAccessException ex) {
+        return ResponseEntity.internalServerError()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(
+                        500,
+                        "Database error. Please verify the meal registration migration has been applied",
+                        errorDetails(ex)
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleUnexpectedException(Exception ex) {
         return ResponseEntity.internalServerError()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(ApiResponse.error(500, "Internal server error"));
+                .body(ApiResponse.error(500, "Internal server error", errorDetails(ex)));
+    }
+
+    private Map<String, String> errorDetails(Exception ex) {
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+
+        Map<String, String> details = new LinkedHashMap<>();
+        details.put("error", ex.getClass().getSimpleName());
+        details.put("detail", rootCause.getMessage() != null ? rootCause.getMessage() : ex.getMessage());
+        return details;
     }
 }

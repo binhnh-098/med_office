@@ -1,5 +1,8 @@
 package com.example.med_office.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,6 +15,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "doctor_meal_dishes")
 public class DoctorMealDish {
@@ -67,117 +72,5 @@ public class DoctorMealDish {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Integer getWeekYear() {
-        return weekYear;
-    }
-
-    public void setWeekYear(Integer weekYear) {
-        this.weekYear = weekYear;
-    }
-
-    public Integer getWeekNumber() {
-        return weekNumber;
-    }
-
-    public void setWeekNumber(Integer weekNumber) {
-        this.weekNumber = weekNumber;
-    }
-
-    public String getDayOfWeek() {
-        return dayOfWeek;
-    }
-
-    public void setDayOfWeek(String dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public String getMealId() {
-        return mealId;
-    }
-
-    public void setMealId(String mealId) {
-        this.mealId = mealId;
-    }
-
-    public String getMealLabel() {
-        return mealLabel;
-    }
-
-    public void setMealLabel(String mealLabel) {
-        this.mealLabel = mealLabel;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
-    public Integer getCalories() {
-        return calories;
-    }
-
-    public void setCalories(Integer calories) {
-        this.calories = calories;
-    }
-
-    public String getServingTime() {
-        return servingTime;
-    }
-
-    public void setServingTime(String servingTime) {
-        this.servingTime = servingTime;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
     }
 }

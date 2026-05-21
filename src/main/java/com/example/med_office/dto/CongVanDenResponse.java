@@ -1,11 +1,14 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Getter
 @Schema(name = "CongVanDenResponse")
 public class CongVanDenResponse {
 
@@ -117,38 +120,19 @@ public class CongVanDenResponse {
         this.nguoiCapNhatId = nguoiCapNhatId;
     }
 
-    public Long getId() { return id; }
-    public String getSoCongVan() { return soCongVan; }
-    public String getSoDen() { return soDen; }
-    public String getTieuDe() { return tieuDe; }
-    public String getNoiDungTomTat() { return noiDungTomTat; }
-    public Integer getDonViGuiId() { return donViGuiId; }
-    public String getDonViGui() { return donViGui; }
-    public String getNguoiKy() { return nguoiKy; }
-    public LocalDate getNgayVanBan() { return ngayVanBan; }
-    public LocalDate getNgayNhan() { return ngayNhan; }
-    public String getMucDoKhan() { return mucDoKhan; }
-    public String getMucDoMat() { return mucDoMat; }
-    public Integer getPhongBanXuLyId() { return phongBanXuLyId; }
-    public Integer getNguoiXuLyId() { return nguoiXuLyId; }
-    public String getNguonNhan() { return nguonNhan; }
-    public LocalDate getHanXuLy() { return hanXuLy; }
-    public String getDoKhanXuLy() { return doKhanXuLy; }
-    public Integer getLoaiVanBanId() { return loaiVanBanId; }
-    public Integer getLinhVucId() { return linhVucId; }
-    public Integer getHoSoId() { return hoSoId; }
-    public Integer getSoTrang() { return soTrang; }
-    public Integer getSoBan() { return soBan; }
-    public String getTrichYeu() { return trichYeu; }
-    public String getGhiChu() { return ghiChu; }
-    public String getYKienChiDao() { return yKienChiDao; }
-    public String getTepDinhKemChinh() { return tepDinhKemChinh; }
-    public String getTrangThai() { return trangThai; }
-    public LocalDateTime getNgayTao() { return ngayTao; }
-    public LocalDateTime getNgayCapNhat() { return ngayCapNhat; }
-    public Boolean getDaDoc() { return daDoc; }
-    public Boolean getDaXuLy() { return daXuLy; }
-    public Boolean getIsDeleted() { return isDeleted; }
-    public Integer getNguoiTaoId() { return nguoiTaoId; }
-    public Integer getNguoiCapNhatId() { return nguoiCapNhatId; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

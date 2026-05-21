@@ -1,9 +1,12 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Getter
 @Schema(name = "LoginResponse")
 public class LoginResponse {
 
@@ -66,47 +69,7 @@ public class LoginResponse {
         this.lastLoginAt = lastLoginAt;
     }
 
-    public Long getId() {
-        return id;
-    }
 
-    public Long getHoSoNhanVienId() {
-        return hoSoNhanVienId;
-    }
 
-    public String getUsername() {
-        return username;
-    }
 
-    public String getFullName() {
-        return fullName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public Long getDepartmentId() {
-        return departmentId;
-    }
-
-    public Long getPositionId() {
-        return positionId;
-    }
-
-    public String getPositionName() {
-        return positionName;
-    }
-
-    public LocalDateTime getLastLoginAt() {
-        return lastLoginAt;
-    }
 }

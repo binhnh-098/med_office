@@ -1,5 +1,8 @@
 package com.example.med_office.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
