@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "HoSoNhanVienResponse")
 public record HoSoNhanVienResponse(
-        Long id,
-        Long nguoiDungId,
+        String id,
+        String nguoiDungId,
         String code,
         String name,
         LocalDate birthDate,

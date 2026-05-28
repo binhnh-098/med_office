@@ -38,7 +38,7 @@ public class CongVanDenServiceImpl implements CongVanDenService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "So cong van da ton tai");
         }
 
-        NhaCungCap nhaCungCap = nhaCungCapRepository.findById(request.getDonViGuiId().longValue())
+        NhaCungCap nhaCungCap = nhaCungCapRepository.findById(request.getDonViGuiId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Don vi gui khong ton tai"));
 
         CongVanDen entity = new CongVanDen();
@@ -84,7 +84,7 @@ public class CongVanDenServiceImpl implements CongVanDenService {
             int size,
             String keyword,
             String trangThai,
-            Integer donViGuiId,
+            String donViGuiId,
             Boolean daXuLy,
             Boolean daDoc,
             LocalDate ngayNhanFrom,
@@ -168,7 +168,7 @@ public class CongVanDenServiceImpl implements CongVanDenService {
     private Specification<CongVanDen> buildSpecification(
             String keyword,
             String trangThai,
-            Integer donViGuiId,
+            String donViGuiId,
             Boolean daXuLy,
             Boolean daDoc,
             LocalDate ngayNhanFrom,

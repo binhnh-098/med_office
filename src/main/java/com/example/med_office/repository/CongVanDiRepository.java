@@ -4,5 +4,5 @@ import com.example.med_office.entity.CongVanDi;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface CongVanDiRepository extends JpaRepository<CongVanDi, Long>, JpaSpecificationExecutor<CongVanDi> {
+public interface CongVanDiRepository extends JpaRepository<CongVanDi, String>, JpaSpecificationExecutor<CongVanDi> {
 }

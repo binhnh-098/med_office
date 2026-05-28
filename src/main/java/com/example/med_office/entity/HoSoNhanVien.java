@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,8 +9,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
@@ -23,11 +22,11 @@ import jakarta.persistence.Table;
 public class HoSoNhanVien {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "nguoi_dung_id", unique = true)
-    private Long nguoiDungId;
+    private String nguoiDungId;
 
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
@@ -59,9 +58,6 @@ public class HoSoNhanVien {
     @Column(name = "specialty", length = 255)
     private String specialty;
 
-    @Column(name = "specialty_name", length = 255)
-    private String specialtyName;
-
     @Column(name = "academic_title", length = 100)
     private String academicTitle;
 
@@ -73,9 +69,6 @@ public class HoSoNhanVien {
 
     @Column(name = "position_code", length = 100)
     private String position;
-
-    @Column(name = "position_name", length = 255)
-    private String positionName;
 
     @Column(name = "honor_title", length = 255)
     private String honorTitle;
@@ -93,11 +86,11 @@ public class HoSoNhanVien {
     private String invoicePassword;
 
     @Lob
-    @Column(name = "avatar_image")
+    @Column(name = "avatar_image", columnDefinition = "LONGTEXT")
     private String avatarImage;
 
     @Lob
-    @Column(name = "signature_image")
+    @Column(name = "signature_image", columnDefinition = "LONGTEXT")
     private String signatureImage;
 
     @Column(name = "locked_from")
@@ -130,6 +123,9 @@ public class HoSoNhanVien {
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (createdAt == null) {
             createdAt = now;
         }

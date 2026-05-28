@@ -1,8 +1,8 @@
 USE med_office;
 
 CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    nguoi_dung_id BIGINT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    nguoi_dung_id CHAR(36) NULL,
     code VARCHAR(50) NOT NULL,
     name VARCHAR(255) NOT NULL,
     birth_date DATE NULL,
@@ -13,12 +13,10 @@ CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
     phone VARCHAR(20) NULL,
     degree VARCHAR(100) NULL,
     specialty VARCHAR(255) NULL,
-    specialty_name VARCHAR(255) NULL,
     academic_title VARCHAR(100) NULL,
     academic_title_name VARCHAR(255) NULL,
     certificate VARCHAR(100) NULL,
     position_code VARCHAR(100) NULL,
-    position_name VARCHAR(255) NULL,
     honor_title VARCHAR(255) NULL,
     signing_pin VARCHAR(255) NULL,
     signing_account VARCHAR(255) NULL,
@@ -54,7 +52,6 @@ INSERT INTO ho_so_nhan_vien (
     email,
     phone,
     position_code,
-    position_name,
     online_booking,
     active,
     note,
@@ -63,12 +60,11 @@ INSERT INTO ho_so_nhan_vien (
 )
 SELECT
     nd.id AS nguoi_dung_id,
-    CONCAT('NV', LPAD(nd.id, 5, '0')) AS code,
+    CONCAT('NV', UPPER(REPLACE(LEFT(nd.id, 8), '-', ''))) AS code,
     nd.ho_ten AS name,
     nd.email,
     nd.so_dien_thoai AS phone,
     cv.ma_chuc_vu AS position_code,
-    cv.ten_chuc_vu AS position_name,
     b'0' AS online_booking,
     CASE WHEN UPPER(COALESCE(nd.trang_thai, '')) = 'ACTIVE' THEN b'1' ELSE b'0' END AS active,
     CONCAT('Dong bo tu nguoi_dung: ', nd.ten_dang_nhap) AS note,
@@ -79,6 +75,6 @@ LEFT JOIN chuc_vu cv ON cv.id = nd.chuc_vu_id
 LEFT JOIN ho_so_nhan_vien hsnv ON hsnv.nguoi_dung_id = nd.id
 WHERE hsnv.id IS NULL;
 
-SELECT id, nguoi_dung_id, code, name, email, phone, position_code, position_name, active
+SELECT id, nguoi_dung_id, code, name, email, phone, position_code, active
 FROM ho_so_nhan_vien
 ORDER BY id;

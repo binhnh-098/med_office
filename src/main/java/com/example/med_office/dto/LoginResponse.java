@@ -3,6 +3,7 @@ package com.example.med_office.dto;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -11,10 +12,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class LoginResponse {
 
     @Schema(example = "1")
-    private final Long id;
+    private final String id;
 
     @Schema(example = "10")
-    private final Long hoSoNhanVienId;
+    private final String hoSoNhanVienId;
 
     @Schema(example = "reception")
     private final String username;
@@ -32,28 +33,36 @@ public class LoginResponse {
     private final String phoneNumber;
 
     @Schema(example = "1")
-    private final Long departmentId;
+    private final String departmentId;
 
     @Schema(example = "2")
-    private final Long positionId;
+    private final String positionId;
 
     @Schema(example = "Bac si")
     private final String positionName;
+
+    @Schema(example = "[\"USER\", \"BAC_SI\"]")
+    private final List<String> roles;
+
+    @Schema(example = "[\"DASHBOARD\", \"HO_SO_NHAN_VIEN\", \"DOCTOR_MEALS\"]")
+    private final List<String> modules;
 
     @Schema(example = "2026-04-13T11:45:00")
     private final LocalDateTime lastLoginAt;
 
     public LoginResponse(
-            Long id,
-            Long hoSoNhanVienId,
+            String id,
+            String hoSoNhanVienId,
             String username,
             String fullName,
             String status,
             String email,
             String phoneNumber,
-            Long departmentId,
-            Long positionId,
+            String departmentId,
+            String positionId,
             String positionName,
+            List<String> roles,
+            List<String> modules,
             LocalDateTime lastLoginAt
     ) {
         this.id = id;
@@ -66,10 +75,8 @@ public class LoginResponse {
         this.departmentId = departmentId;
         this.positionId = positionId;
         this.positionName = positionName;
+        this.roles = roles == null ? List.of() : List.copyOf(roles);
+        this.modules = modules == null ? List.of() : List.copyOf(modules);
         this.lastLoginAt = lastLoginAt;
     }
-
-
-
-
 }

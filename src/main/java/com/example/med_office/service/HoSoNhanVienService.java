@@ -2,7 +2,9 @@ package com.example.med_office.service;
 
 import com.example.med_office.dto.HoSoNhanVienRequest;
 import com.example.med_office.dto.HoSoNhanVienResponse;
+import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface HoSoNhanVienService {
 
@@ -13,16 +15,18 @@ public interface HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            Long nguoiDungId
+            String nguoiDungId
     );
 
-    HoSoNhanVienResponse findById(Long id);
+    HoSoNhanVienResponse findById(String id);
 
     HoSoNhanVienResponse create(HoSoNhanVienRequest request);
 
-    HoSoNhanVienResponse update(Long id, HoSoNhanVienRequest request);
+    HoSoNhanVienResponse update(String id, HoSoNhanVienRequest request);
 
-    void delete(Long id);
+    void delete(String id);
 
     String exportCsv();
+
+    ImportResultResponse importExcel(MultipartFile file);
 }

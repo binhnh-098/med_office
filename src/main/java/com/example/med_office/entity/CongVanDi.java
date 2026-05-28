@@ -1,12 +1,11 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -22,8 +21,8 @@ import java.time.LocalDateTime;
 public class CongVanDi {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "so_cong_van", nullable = false, length = 100)
     private String soCongVan;
@@ -41,7 +40,7 @@ public class CongVanDi {
     private LocalDate ngayBanHanh;
 
     @Column(name = "nguoi_ky_id")
-    private Integer nguoiKyId;
+    private String nguoiKyId;
 
     @Column(name = "trang_thai", length = 50)
     private String trangThai;
@@ -55,6 +54,9 @@ public class CongVanDi {
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (ngayTao == null) {
             ngayTao = now;
         }

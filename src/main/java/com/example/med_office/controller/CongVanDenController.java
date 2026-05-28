@@ -42,7 +42,7 @@ public class CongVanDenController {
             @RequestParam(defaultValue = "20") @Min(value = 1, message = "Size must be greater than 0") @Max(value = 100, message = "Size must be less than or equal to 100") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String trangThai,
-            @RequestParam(required = false) Integer donViGuiId,
+            @RequestParam(required = false) String donViGuiId,
             @RequestParam(required = false) Boolean daXuLy,
             @RequestParam(required = false) Boolean daDoc,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayNhanFrom,

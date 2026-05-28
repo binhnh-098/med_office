@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 @Getter
@@ -37,10 +36,9 @@ public class CongVanDenCreateRequest {
     @JsonAlias("noi_dung_tom_tat")
     private String noiDungTomTat;
 
-    @NotNull
-    @Positive(message = "Don vi gui id must be greater than 0")
+    @NotBlank(message = "Don vi gui id khong duoc de trong")
     @JsonAlias("don_vi_gui_id")
-    private Integer donViGuiId;
+    private String donViGuiId;
 
     @Size(max = 255, message = "Nguoi ky must not exceed 255 characters")
     @JsonAlias("nguoi_ky")
@@ -65,10 +63,10 @@ public class CongVanDenCreateRequest {
     private String mucDoMat;
 
     @JsonAlias("phong_ban_xu_ly_id")
-    private Integer phongBanXuLyId;
+    private String phongBanXuLyId;
 
     @JsonAlias("nguoi_xu_ly_id")
-    private Integer nguoiXuLyId;
+    private String nguoiXuLyId;
 
     @NotBlank
     @Size(max = 100, message = "Nguon nhan must not exceed 100 characters")
@@ -83,13 +81,13 @@ public class CongVanDenCreateRequest {
     private String doKhanXuLy;
 
     @JsonAlias("loai_van_ban_id")
-    private Integer loaiVanBanId;
+    private String loaiVanBanId;
 
     @JsonAlias("linh_vuc_id")
-    private Integer linhVucId;
+    private String linhVucId;
 
     @JsonAlias("ho_so_id")
-    private Integer hoSoId;
+    private String hoSoId;
 
     @JsonAlias("so_trang")
     private Integer soTrang;
@@ -124,10 +122,10 @@ public class CongVanDenCreateRequest {
     private Boolean isDeleted;
 
     @JsonAlias("nguoi_tao_id")
-    private Integer nguoiTaoId;
+    private String nguoiTaoId;
 
     @JsonAlias("nguoi_cap_nhat_id")
-    private Integer nguoiCapNhatId;
+    private String nguoiCapNhatId;
 
     @Size(max = 50, message = "Trang thai must not exceed 50 characters")
     @JsonAlias("trang_thai")

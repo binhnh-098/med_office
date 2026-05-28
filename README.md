@@ -52,7 +52,27 @@ AI_MAX_TOKENS=512
 mysql -u root -p < src/main/resources/schema-mysql.sql
 ```
 
-3. Start the app in development:
+3. Optional: reset and insert sample data for local development:
+
+```powershell
+mysql --default-character-set=utf8mb4 -u med_office -p med_office --execute="SOURCE src/main/resources/sample-data-all.sql"
+```
+
+This seed file clears application data tables before inserting the local sample dataset. Do not run it against a database that contains real data.
+
+Sample login accounts use password `clinic123`, for example `admin`, `doctor1`, `doctor2`, `nurse1`, and `reception`.
+
+Sample account roles and modules:
+
+```text
+admin     -> GIAM_DOC   -> all modules
+doctor1   -> BAC_SI     -> DASHBOARD, HO_SO_NHAN_VIEN, CHUYEN_KHOA, DOCTOR_MEALS, ROWBOAT
+doctor2   -> BAC_SI     -> DASHBOARD, HO_SO_NHAN_VIEN, CHUYEN_KHOA, DOCTOR_MEALS, ROWBOAT
+nurse1    -> DIEU_DUONG -> DASHBOARD, HO_SO_NHAN_VIEN, CHUYEN_KHOA, DOCTOR_MEALS
+reception -> LE_TAN     -> DASHBOARD, HO_SO_NHAN_VIEN, CHUYEN_KHOA, CONG_VAN, DOCTOR_MEALS, ROWBOAT
+```
+
+4. Start the app in development:
 
 ```powershell
 ./mvnw spring-boot:run
@@ -105,6 +125,74 @@ http://localhost:8080/swagger-ui.html
 `GET /api/me`
 
 Requires the session cookie returned by `login`.
+
+The login and current-user responses include `roles` and `modules`, for example:
+
+```json
+{
+  "roles": ["USER", "BAC_SI"],
+  "modules": ["DASHBOARD", "HO_SO_NHAN_VIEN", "CHUYEN_KHOA", "DOCTOR_MEALS", "ROWBOAT"]
+}
+```
+
+### Create User
+
+`POST /api/signup`
+
+Requires a logged-in account with role `GIAM_DOC`.
+
+```json
+{
+  "username": "doctor3",
+  "password": "clinic123",
+  "fullName": "Nguyen Van A",
+  "email": "doctor3@example.com",
+  "phoneNumber": "0900000000",
+  "maChucVu": "BAC_SI"
+}
+```
+
+Passwords are hashed before saving. You can assign a role by either `maChucVu` or `chucVuId`.
+
+### Manage User Roles
+
+Requires role `GIAM_DOC`.
+
+```text
+GET /api/nguoi-dung
+PUT /api/nguoi-dung/{id}/chuc-vu
+```
+
+Example role update:
+
+```json
+{
+  "maChucVu": "TRUONG_KHOA"
+}
+```
+
+Available sample role codes are `GIAM_DOC`, `TRUONG_KHOA`, `BAC_SI`, `DIEU_DUONG`, and `LE_TAN`.
+
+## Module Permissions
+
+Backend API access is enforced by role:
+
+```text
+GIAM_DOC
+  All modules and user/role management.
+
+TRUONG_KHOA
+  HO_SO_NHAN_VIEN, CHUYEN_KHOA, CONG_VAN, DOCTOR_MEALS, ROWBOAT.
+
+BAC_SI
+  HO_SO_NHAN_VIEN read, CHUYEN_KHOA read, DOCTOR_MEALS, ROWBOAT.
+
+DIEU_DUONG
+  HO_SO_NHAN_VIEN read, CHUYEN_KHOA read, DOCTOR_MEALS.
+
+LE_TAN
+  HO_SO_NHAN_VIEN, CHUYEN_KHOA read, CONG_VAN, DOCTOR_MEALS, ROWBOAT.
+```
 
 ### Logout
 

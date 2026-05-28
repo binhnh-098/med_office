@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -9,12 +10,11 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,8 +26,8 @@ import lombok.Setter;
 public class DoctorMealRegistrationItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "registration_id", nullable = false)
@@ -57,5 +57,12 @@ public class DoctorMealRegistrationItem {
     public void addMealSnapshot(DoctorMealRegistrationItemSnapshot snapshot) {
         snapshot.setRegistrationItem(this);
         mealSnapshots.add(snapshot);
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
     }
 }

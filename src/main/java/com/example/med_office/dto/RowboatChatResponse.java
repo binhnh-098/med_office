@@ -18,7 +18,7 @@ public class RowboatChatResponse {
 
     private Object state;
 
-    private Long historyId;
+    private String historyId;
 
     private String status;
 

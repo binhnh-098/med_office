@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Getter
@@ -17,7 +19,8 @@ import jakarta.persistence.Table;
 public class NhaCungCap {
 
     @Id
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "ma_nha_cung_cap", length = 50)
     private String maNhaCungCap;
@@ -30,4 +33,14 @@ public class NhaCungCap {
 
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
+        if (ngayTao == null) {
+            ngayTao = LocalDateTime.now();
+        }
+    }
 }

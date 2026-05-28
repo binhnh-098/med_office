@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,8 +8,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -20,8 +19,8 @@ import jakarta.persistence.Table;
 public class NguoiDung {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "ten_dang_nhap", nullable = false, unique = true, length = 100)
     private String tenDangNhap;
@@ -39,10 +38,10 @@ public class NguoiDung {
     private String soDienThoai;
 
     @Column(name = "phong_ban_id")
-    private Long phongBanId;
+    private String phongBanId;
 
     @Column(name = "chuc_vu_id")
-    private Long chucVuId;
+    private String chucVuId;
 
     @Column(name = "trang_thai", nullable = false, length = 50)
     private String trangThai;
@@ -58,6 +57,9 @@ public class NguoiDung {
 
     @PrePersist
     public void prePersist() {
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (trangThai == null || trangThai.isBlank()) {
             trangThai = "ACTIVE";
         }

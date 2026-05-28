@@ -5,7 +5,7 @@ import java.util.List;
 import com.example.med_office.entity.DoctorMealDish;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface DoctorMealDishRepository extends JpaRepository<DoctorMealDish, Long> {
+public interface DoctorMealDishRepository extends JpaRepository<DoctorMealDish, String> {
 
     List<DoctorMealDish> findByWeekYearAndWeekNumberOrderByDateAscMealIdAscIdAsc(
             Integer weekYear,

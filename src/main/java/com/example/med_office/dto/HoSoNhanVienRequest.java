@@ -11,14 +11,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 @Schema(name = "HoSoNhanVienRequest")
 public record HoSoNhanVienRequest(
-        @Positive(message = "Nguoi dung id must be greater than 0")
         @JsonAlias({"nguoi_dung_id", "user_id"})
-        Long nguoiDungId,
+        String nguoiDungId,
 
         @NotBlank
         @Size(max = 50, message = "Code must not exceed 50 characters")
@@ -60,10 +58,6 @@ public record HoSoNhanVienRequest(
         @Size(max = 255, message = "Specialty must not exceed 255 characters")
         String specialty,
 
-        @Size(max = 255, message = "Specialty name must not exceed 255 characters")
-        @JsonAlias("specialty_name")
-        String specialtyName,
-
         @Size(max = 100, message = "Academic title must not exceed 100 characters")
         @JsonAlias("academic_title")
         String academicTitle,
@@ -77,10 +71,6 @@ public record HoSoNhanVienRequest(
 
         @Size(max = 100, message = "Position must not exceed 100 characters")
         String position,
-
-        @Size(max = 255, message = "Position name must not exceed 255 characters")
-        @JsonAlias("position_name")
-        String positionName,
 
         @Size(max = 255, message = "Honor title must not exceed 255 characters")
         @JsonAlias("honor_title")

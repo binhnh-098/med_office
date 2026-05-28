@@ -13,21 +13,23 @@ GRANT ALL PRIVILEGES ON med_office.* TO 'med_office'@'127.0.0.1';
 USE med_office;
 
 CREATE TABLE IF NOT EXISTS chuc_vu (
-    id BIGINT NOT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     ma_chuc_vu VARCHAR(50) NOT NULL,
     ten_chuc_vu VARCHAR(255) NOT NULL,
+    user_id CHAR(36) NULL,
     cap_bac INT NULL,
     mo_ta VARCHAR(1000) NULL,
     ngay_tao DATETIME NULL,
     ngay_cap_nhat DATETIME NULL,
     PRIMARY KEY (id),
-    KEY idx_chuc_vu_ma_chuc_vu (ma_chuc_vu)
+    KEY idx_chuc_vu_ma_chuc_vu (ma_chuc_vu),
+    KEY idx_chuc_vu_user_id (user_id)
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS nha_cung_cap (
-    id BIGINT NOT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     ma_nha_cung_cap VARCHAR(50) NULL,
     ten_nha_cung_cap VARCHAR(255) NOT NULL,
     trang_thai VARCHAR(50) NULL,
@@ -39,14 +41,14 @@ CREATE TABLE IF NOT EXISTS nha_cung_cap (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS nguoi_dung (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     ten_dang_nhap VARCHAR(100) NOT NULL,
     mat_khau_ma_hoa VARCHAR(255) NOT NULL,
     ho_ten VARCHAR(255) NOT NULL,
     email VARCHAR(255) NULL,
     so_dien_thoai VARCHAR(20) NULL,
-    phong_ban_id BIGINT NULL,
-    chuc_vu_id BIGINT NULL,
+    phong_ban_id CHAR(36) NULL,
+    chuc_vu_id CHAR(36) NULL,
     trang_thai VARCHAR(50) NOT NULL,
     lan_dang_nhap_cuoi DATETIME NULL,
     ngay_tao DATETIME NOT NULL,
@@ -59,9 +61,13 @@ CREATE TABLE IF NOT EXISTS nguoi_dung (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE chuc_vu
+    ADD CONSTRAINT fk_chuc_vu_user
+        FOREIGN KEY (user_id) REFERENCES nguoi_dung (id);
+
 CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    nguoi_dung_id BIGINT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    nguoi_dung_id CHAR(36) NULL,
     code VARCHAR(50) NOT NULL,
     name VARCHAR(255) NOT NULL,
     birth_date DATE NULL,
@@ -72,12 +78,10 @@ CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
     phone VARCHAR(20) NULL,
     degree VARCHAR(100) NULL,
     specialty VARCHAR(255) NULL,
-    specialty_name VARCHAR(255) NULL,
     academic_title VARCHAR(100) NULL,
     academic_title_name VARCHAR(255) NULL,
     certificate VARCHAR(100) NULL,
     position_code VARCHAR(100) NULL,
-    position_name VARCHAR(255) NULL,
     honor_title VARCHAR(255) NULL,
     signing_pin VARCHAR(255) NULL,
     signing_account VARCHAR(255) NULL,
@@ -106,27 +110,40 @@ CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS chuyen_khoa (
+    id_chuyen_khoa CHAR(36) NOT NULL DEFAULT (UUID()),
+    ten_chuyen_khoa VARCHAR(255) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    PRIMARY KEY (id_chuyen_khoa),
+    KEY idx_chuyen_khoa_user_id (user_id),
+    KEY idx_chuyen_khoa_ten_chuyen_khoa (ten_chuyen_khoa),
+    CONSTRAINT fk_chuyen_khoa_user
+        FOREIGN KEY (user_id) REFERENCES nguoi_dung (id)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS cong_van_den (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     so_cong_van VARCHAR(100) NOT NULL,
     so_den VARCHAR(100) NOT NULL,
     tieu_de VARCHAR(500) NOT NULL,
     noi_dung_tom_tat VARCHAR(2000) NULL,
     don_vi_gui VARCHAR(255) NULL,
-    don_vi_gui_id INT NULL,
+    don_vi_gui_id CHAR(36) NULL,
     nguoi_ky VARCHAR(255) NULL,
     ngay_van_ban DATE NULL,
     ngay_nhan DATE NULL,
     muc_do_khan VARCHAR(50) NULL,
     muc_do_mat VARCHAR(50) NULL,
-    phong_ban_xu_ly_id INT NULL,
-    nguoi_xu_ly_id INT NULL,
+    phong_ban_xu_ly_id CHAR(36) NULL,
+    nguoi_xu_ly_id CHAR(36) NULL,
     nguon_nhan VARCHAR(100) NULL,
     han_xu_ly DATE NULL,
     do_khan_xu_ly VARCHAR(50) NULL,
-    loai_van_ban_id INT NULL,
-    linh_vuc_id INT NULL,
-    ho_so_id INT NULL,
+    loai_van_ban_id CHAR(36) NULL,
+    linh_vuc_id CHAR(36) NULL,
+    ho_so_id CHAR(36) NULL,
     so_trang INT NULL,
     so_ban INT NULL,
     trich_yeu VARCHAR(2000) NULL,
@@ -139,8 +156,8 @@ CREATE TABLE IF NOT EXISTS cong_van_den (
     da_doc BIT(1) NULL,
     da_xu_ly BIT(1) NULL,
     is_deleted BIT(1) NULL,
-    nguoi_tao_id INT NULL,
-    nguoi_cap_nhat_id INT NULL,
+    nguoi_tao_id CHAR(36) NULL,
+    nguoi_cap_nhat_id CHAR(36) NULL,
     PRIMARY KEY (id),
     KEY idx_cong_van_den_so_cong_van (so_cong_van),
     KEY idx_cong_van_den_so_den (so_den),
@@ -151,13 +168,13 @@ CREATE TABLE IF NOT EXISTS cong_van_den (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS cong_van_di (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     so_cong_van VARCHAR(100) NOT NULL,
     tieu_de VARCHAR(500) NOT NULL,
     noi_dung_tom_tat VARCHAR(2000) NULL,
     don_vi_nhan VARCHAR(255) NULL,
     ngay_ban_hanh DATE NULL,
-    nguoi_ky_id INT NULL,
+    nguoi_ky_id CHAR(36) NULL,
     trang_thai VARCHAR(50) NULL,
     ngay_tao DATETIME NULL,
     ngay_cap_nhat DATETIME NULL,
@@ -170,7 +187,7 @@ CREATE TABLE IF NOT EXISTS cong_van_di (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS rowboat_chat_histories (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     username VARCHAR(100) NULL,
     user_message VARCHAR(4000) NULL,
     assistant_message VARCHAR(4000) NULL,
@@ -188,7 +205,7 @@ CREATE TABLE IF NOT EXISTS rowboat_chat_histories (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS doctor_meal_registrations (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     week_year INT NOT NULL,
     week_number INT NOT NULL,
     week_label VARCHAR(64) NULL,
@@ -212,8 +229,8 @@ CREATE TABLE IF NOT EXISTS doctor_meal_registrations (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS doctor_meal_registration_items (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    registration_id BIGINT NOT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    registration_id CHAR(36) NOT NULL,
     meal_date DATE NOT NULL,
     day_of_week VARCHAR(32) NULL,
     meal_id VARCHAR(32) NULL,
@@ -231,8 +248,8 @@ CREATE TABLE IF NOT EXISTS doctor_meal_registration_items (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS doctor_meal_registration_item_snapshots (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    registration_item_id BIGINT NOT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    registration_item_id CHAR(36) NOT NULL,
     name VARCHAR(255) NOT NULL,
     serving_time VARCHAR(32) NULL,
     quantity INT NOT NULL,
@@ -248,7 +265,7 @@ CREATE TABLE IF NOT EXISTS doctor_meal_registration_item_snapshots (
   COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS doctor_meal_dishes (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
     week_year INT NOT NULL,
     week_number INT NOT NULL,
     day_of_week VARCHAR(32) NOT NULL,

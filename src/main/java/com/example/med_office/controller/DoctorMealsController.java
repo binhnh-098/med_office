@@ -78,7 +78,7 @@ public class DoctorMealsController {
     @Operation(summary = "Cap nhat mon an")
     @PutMapping(path = "/dishes/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> updateDish(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody DoctorMealDishUpdateRequest request,
             Authentication authentication
     ) {
@@ -89,7 +89,7 @@ public class DoctorMealsController {
     @Operation(summary = "Xoa mon an")
     @DeleteMapping(path = "/dishes/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Object>> deleteDish(
-            @PathVariable Long id,
+            @PathVariable String id,
             Authentication authentication
     ) {
         doctorMealsService.deleteDish(id, authentication.getName());
@@ -125,7 +125,7 @@ public class DoctorMealsController {
     @Operation(summary = "Chi tiet phieu dang ky")
     @GetMapping(path = "/registrations/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRegistration(
-            @PathVariable Long id,
+            @PathVariable String id,
             Authentication authentication
     ) {
         Map<String, Object> data = doctorMealsService.getRegistrationDetail(id, authentication.getName());
@@ -135,7 +135,7 @@ public class DoctorMealsController {
     @Operation(summary = "Huy phieu dang ky")
     @DeleteMapping(path = "/registrations/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Object>> deleteRegistration(
-            @PathVariable Long id,
+            @PathVariable String id,
             Authentication authentication
     ) {
         doctorMealsService.deleteRegistration(id, authentication.getName());
@@ -145,9 +145,9 @@ public class DoctorMealsController {
     @Operation(summary = "Huy mot mon an trong phieu dang ky")
     @DeleteMapping(path = "/registrations/{registrationId}/items/{itemId}/dishes/{dishId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> deleteRegistrationItemDish(
-            @PathVariable Long registrationId,
-            @PathVariable Long itemId,
-            @PathVariable Long dishId,
+            @PathVariable String registrationId,
+            @PathVariable String itemId,
+            @PathVariable String dishId,
             Authentication authentication
     ) {
         Map<String, Object> data = doctorMealsService.deleteRegistrationItemDish(

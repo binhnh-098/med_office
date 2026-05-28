@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,8 +13,6 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -26,8 +25,8 @@ import jakarta.persistence.Table;
 public class DoctorMealRegistration {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "week_year", nullable = false)
     private Integer weekYear;
@@ -81,6 +80,9 @@ public class DoctorMealRegistration {
 
     @PrePersist
     void prePersist() {
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (createdAt == null) {
             createdAt = Instant.now();
         }

@@ -241,7 +241,7 @@ public class DoctorMealsService {
     }
 
     @Transactional
-    public Map<String, Object> updateDish(Long id, String principalName, DoctorMealDishUpdateRequest request) {
+    public Map<String, Object> updateDish(String id, String principalName, DoctorMealDishUpdateRequest request) {
         DoctorMealDish dish = getOwnedDish(id, principalName);
         ensureDishDateIsEditable(dish.getDate(), "Cannot update dishes from a past date");
 
@@ -322,7 +322,7 @@ public class DoctorMealsService {
         return out;
     }
 
-    public Map<String, Object> getRegistrationDetail(Long id, String username) {
+    public Map<String, Object> getRegistrationDetail(String id, String username) {
         DoctorMealRegistration row = findRegistrationByIdAndUser(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration not found"));
 
@@ -371,14 +371,14 @@ public class DoctorMealsService {
     }
 
     @Transactional
-    public void deleteRegistration(Long id, String username) {
+    public void deleteRegistration(String id, String username) {
         DoctorMealRegistration row = findRegistrationByIdAndUser(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registration not found"));
         registrationRepository.delete(row);
     }
 
     @Transactional
-    public void deleteDish(Long id, String principalName) {
+    public void deleteDish(String id, String principalName) {
         DoctorMealDish dish = getOwnedDish(id, principalName);
         ensureDishCanBeDeleted(dish);
         dishRepository.delete(dish);
@@ -386,9 +386,9 @@ public class DoctorMealsService {
 
     @Transactional
     public Map<String, Object> deleteRegistrationItemDish(
-            Long registrationId,
-            Long itemId,
-            Long dishId,
+            String registrationId,
+            String itemId,
+            String dishId,
             String username
     ) {
         DoctorMealRegistration registration = findRegistrationByIdAndUser(registrationId, username)
@@ -470,7 +470,7 @@ public class DoctorMealsService {
         return item;
     }
 
-    private DoctorMealDish getOwnedDish(Long id, String principalName) {
+    private DoctorMealDish getOwnedDish(String id, String principalName) {
         DoctorMealDish dish = dishRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dish not found"));
         if (!principalName.equals(dish.getCreatedBy())) {
@@ -488,7 +488,7 @@ public class DoctorMealsService {
         return registrationRepository.findByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(weekYear, weekNumber, username);
     }
 
-    private Optional<DoctorMealRegistration> findRegistrationByIdAndUser(Long id, String username) {
+    private Optional<DoctorMealRegistration> findRegistrationByIdAndUser(String id, String username) {
         Optional<DoctorMealRegistration> row = registrationRepository.findByIdAndRequesterUsername(id, username);
         if (row.isPresent()) {
             return row;

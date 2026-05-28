@@ -6,7 +6,7 @@ import java.util.Optional;
 import com.example.med_office.entity.DoctorMealRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface DoctorMealRegistrationRepository extends JpaRepository<DoctorMealRegistration, Long> {
+public interface DoctorMealRegistrationRepository extends JpaRepository<DoctorMealRegistration, String> {
 
     Optional<DoctorMealRegistration> findFirstByWeekYearAndWeekNumberAndUsernameOrderByIdDesc(
             Integer weekYear,
@@ -32,7 +32,7 @@ public interface DoctorMealRegistrationRepository extends JpaRepository<DoctorMe
             String requesterUsername
     );
 
-    Optional<DoctorMealRegistration> findByIdAndUsername(Long id, String username);
+    Optional<DoctorMealRegistration> findByIdAndUsername(String id, String username);
 
-    Optional<DoctorMealRegistration> findByIdAndRequesterUsername(Long id, String requesterUsername);
+    Optional<DoctorMealRegistration> findByIdAndRequesterUsername(String id, String requesterUsername);
 }

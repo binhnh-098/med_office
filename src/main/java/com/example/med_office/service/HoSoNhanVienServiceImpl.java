@@ -2,11 +2,21 @@ package com.example.med_office.service;
 
 import com.example.med_office.dto.HoSoNhanVienRequest;
 import com.example.med_office.dto.HoSoNhanVienResponse;
+import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
+import com.example.med_office.repository.ChucVuRepository;
+import com.example.med_office.repository.ChuyenKhoaRepository;
 import com.example.med_office.entity.HoSoNhanVien;
 import com.example.med_office.repository.HoSoNhanVienRepository;
 import com.example.med_office.repository.NguoiDungRepository;
 import jakarta.persistence.criteria.Predicate;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -14,12 +24,20 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,13 +47,25 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
     private final HoSoNhanVienRepository hoSoNhanVienRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final ChuyenKhoaRepository chuyenKhoaRepository;
+    private final ChucVuRepository chucVuRepository;
+    private static final List<DateTimeFormatter> EXCEL_DATE_FORMATS = List.of(
+            DateTimeFormatter.ISO_LOCAL_DATE,
+            DateTimeFormatter.ofPattern("d/M/yyyy"),
+            DateTimeFormatter.ofPattern("d-M-yyyy"),
+            DateTimeFormatter.ofPattern("d.M.yyyy")
+    );
 
     public HoSoNhanVienServiceImpl(
             HoSoNhanVienRepository hoSoNhanVienRepository,
-            NguoiDungRepository nguoiDungRepository
+            NguoiDungRepository nguoiDungRepository,
+            ChuyenKhoaRepository chuyenKhoaRepository,
+            ChucVuRepository chucVuRepository
     ) {
         this.hoSoNhanVienRepository = hoSoNhanVienRepository;
         this.nguoiDungRepository = nguoiDungRepository;
+        this.chuyenKhoaRepository = chuyenKhoaRepository;
+        this.chucVuRepository = chucVuRepository;
     }
 
     @Override
@@ -47,7 +77,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            Long nguoiDungId
+            String nguoiDungId
     ) {
         Page<HoSoNhanVien> result = hoSoNhanVienRepository.findAll(
                 buildSpecification(keyword, active, gender, onlineBooking, nguoiDungId),
@@ -72,7 +102,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
     @Override
     @Transactional(readOnly = true)
-    public HoSoNhanVienResponse findById(Long id) {
+    public HoSoNhanVienResponse findById(String id) {
         return toResponse(findHoSoNhanVien(id));
     }
 
@@ -94,7 +124,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
     @Override
     @Transactional
-    public HoSoNhanVienResponse update(Long id, HoSoNhanVienRequest request) {
+    public HoSoNhanVienResponse update(String id, HoSoNhanVienRequest request) {
         HoSoNhanVien hoSoNhanVien = findHoSoNhanVien(id);
         String code = trim(request.code());
         validateRequiredFields(code, trim(request.name()));
@@ -110,7 +140,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
+    public void delete(String id) {
         HoSoNhanVien hoSoNhanVien = findHoSoNhanVien(id);
         hoSoNhanVienRepository.delete(hoSoNhanVien);
     }
@@ -161,7 +191,69 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         return "\uFEFF" + header + (rows.isBlank() ? "" : "\n" + rows);
     }
 
-    private HoSoNhanVien findHoSoNhanVien(Long id) {
+    @Override
+    @Transactional
+    public ImportResultResponse importExcel(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel khong duoc de trong");
+        }
+
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = workbook.getNumberOfSheets() > 0 ? workbook.getSheetAt(0) : null;
+            if (sheet == null || sheet.getPhysicalNumberOfRows() < 2) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel khong co du lieu");
+            }
+
+            Map<String, Integer> headers = readHeaders(sheet.getRow(0));
+            int created = 0;
+            int updated = 0;
+            int skipped = 0;
+
+            for (int index = 1; index <= sheet.getLastRowNum(); index++) {
+                Row row = sheet.getRow(index);
+                if (row == null || isBlankRow(row)) {
+                    skipped++;
+                    continue;
+                }
+
+                String code = cellText(row, headers, "code", "ma_nhan_vien", "ma_nv", "ho_so_nhan_vien_code");
+                String name = cellText(row, headers, "name", "ho_ten", "ho_va_ten", "ten_nhan_vien", "ho_so_nhan_vien_name");
+                if (code == null || code.isBlank() || name == null || name.isBlank()) {
+                    skipped++;
+                    continue;
+                }
+
+                HoSoNhanVien hoSoNhanVien = hoSoNhanVienRepository.findByCodeIgnoreCase(code)
+                        .orElseGet(HoSoNhanVien::new);
+                boolean isNew = hoSoNhanVien.getId() == null;
+
+                try {
+                    applyExcelRow(hoSoNhanVien, row, headers, code, name);
+                } catch (RuntimeException ex) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Dong " + (index + 1) + " trong file Excel khong dung dinh dang"
+                    );
+                }
+                hoSoNhanVienRepository.save(hoSoNhanVien);
+                if (isNew) {
+                    created++;
+                } else {
+                    updated++;
+                }
+            }
+
+            return new ImportResultResponse(created, updated, skipped);
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel khong dung mau hoac khong the import");
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel khong dung mau hoac khong the import");
+        }
+    }
+
+    private HoSoNhanVien findHoSoNhanVien(String id) {
         return hoSoNhanVienRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay ho so nhan vien"));
     }
@@ -171,7 +263,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            Long nguoiDungId
+            String nguoiDungId
     ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -185,9 +277,9 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("socialInsurance")), normalizedKeyword),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), normalizedKeyword),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("phone")), normalizedKeyword),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("specialtyName")), normalizedKeyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("specialty")), normalizedKeyword),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("certificate")), normalizedKeyword),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("positionName")), normalizedKeyword)
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("position")), normalizedKeyword)
                 ));
             }
 
@@ -223,12 +315,10 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         hoSoNhanVien.setPhone(trim(request.phone()));
         hoSoNhanVien.setDegree(trim(request.degree()));
         hoSoNhanVien.setSpecialty(trim(request.specialty()));
-        hoSoNhanVien.setSpecialtyName(trim(request.specialtyName()));
         hoSoNhanVien.setAcademicTitle(trim(request.academicTitle()));
         hoSoNhanVien.setAcademicTitleName(trim(request.academicTitleName()));
         hoSoNhanVien.setCertificate(trim(request.certificate()));
         hoSoNhanVien.setPosition(trim(request.position()));
-        hoSoNhanVien.setPositionName(trim(request.positionName()));
         hoSoNhanVien.setHonorTitle(trim(request.honorTitle()));
         hoSoNhanVien.setSigningPin(trim(request.signingPin()));
         hoSoNhanVien.setSigningAccount(trim(request.signingAccount()));
@@ -259,12 +349,12 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 hoSoNhanVien.getPhone(),
                 hoSoNhanVien.getDegree(),
                 hoSoNhanVien.getSpecialty(),
-                hoSoNhanVien.getSpecialtyName(),
+                resolveSpecialtyName(hoSoNhanVien.getSpecialty()),
                 hoSoNhanVien.getAcademicTitle(),
                 hoSoNhanVien.getAcademicTitleName(),
                 hoSoNhanVien.getCertificate(),
                 hoSoNhanVien.getPosition(),
-                hoSoNhanVien.getPositionName(),
+                resolvePositionName(hoSoNhanVien.getPosition()),
                 hoSoNhanVien.getHonorTitle(),
                 hoSoNhanVien.getSigningPin(),
                 hoSoNhanVien.getSigningAccount(),
@@ -296,12 +386,12 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                         hoSoNhanVien.getPhone(),
                         hoSoNhanVien.getDegree(),
                         hoSoNhanVien.getSpecialty(),
-                        hoSoNhanVien.getSpecialtyName(),
+                        resolveSpecialtyName(hoSoNhanVien.getSpecialty()),
                         hoSoNhanVien.getAcademicTitle(),
                         hoSoNhanVien.getAcademicTitleName(),
                         hoSoNhanVien.getCertificate(),
                         hoSoNhanVien.getPosition(),
-                        hoSoNhanVien.getPositionName(),
+                        resolvePositionName(hoSoNhanVien.getPosition()),
                         hoSoNhanVien.getHonorTitle(),
                         hoSoNhanVien.getSigningPin(),
                         hoSoNhanVien.getSigningAccount(),
@@ -336,6 +426,226 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         return value == null ? null : value.trim();
     }
 
+    private void applyExcelRow(
+            HoSoNhanVien hoSoNhanVien,
+            Row row,
+            Map<String, Integer> headers,
+            String code,
+            String name
+    ) {
+        hoSoNhanVien.setCode(trim(code));
+        hoSoNhanVien.setName(trim(name));
+        hoSoNhanVien.setNguoiDungId(cellText(row, headers, "nguoiDungId", "nguoi_dung_id", "user_id"));
+        hoSoNhanVien.setBirthDate(cellDate(row, headers, "birthDate", "birth_date", "ngay_sinh"));
+        hoSoNhanVien.setGender(cellGender(row, headers, "gender", "gioi_tinh"));
+        hoSoNhanVien.setIdentityNumber(cellText(row, headers, "identityNumber", "identity_number", "cccd", "cmnd", "so_cccd", "so_cmnd"));
+        hoSoNhanVien.setSocialInsurance(cellText(row, headers, "socialInsurance", "social_insurance", "bhxh", "so_bhxh"));
+        hoSoNhanVien.setEmail(cellText(row, headers, "email"));
+        hoSoNhanVien.setPhone(cellText(row, headers, "phone", "phone_number", "so_dien_thoai", "dien_thoai"));
+        hoSoNhanVien.setDegree(cellText(row, headers, "degree", "bang_cap", "trinh_do"));
+        hoSoNhanVien.setSpecialty(resolveSpecialtyId(cellText(row, headers, "specialty", "chuyen_khoa", "ten_chuyen_khoa", "chuyen_khoa_id", "id_chuyen_khoa")));
+        hoSoNhanVien.setAcademicTitle(cellText(row, headers, "academicTitle", "academic_title", "hoc_ham"));
+        hoSoNhanVien.setAcademicTitleName(cellText(row, headers, "academicTitleName", "academic_title_name", "ten_hoc_ham"));
+        hoSoNhanVien.setCertificate(cellText(row, headers, "certificate", "chung_chi", "chung_chi_hanh_nghe"));
+        hoSoNhanVien.setPosition(resolvePositionCode(cellText(row, headers, "position", "position_code", "ma_chuc_vu", "chuc_vu", "ten_chuc_vu", "chuc_vu_id")));
+        hoSoNhanVien.setHonorTitle(cellText(row, headers, "honorTitle", "honor_title", "danh_hieu"));
+        hoSoNhanVien.setSigningPin(cellText(row, headers, "signingPin", "signing_pin"));
+        hoSoNhanVien.setSigningAccount(cellText(row, headers, "signingAccount", "signing_account"));
+        hoSoNhanVien.setSigningOtp(cellText(row, headers, "signingOtp", "signing_otp"));
+        hoSoNhanVien.setInvoicePassword(cellText(row, headers, "invoicePassword", "invoice_password"));
+        hoSoNhanVien.setAvatarImage(cellText(row, headers, "avatarImage", "avatar_image"));
+        hoSoNhanVien.setSignatureImage(cellText(row, headers, "signatureImage", "signature_image"));
+        hoSoNhanVien.setLockedFrom(cellDate(row, headers, "lockedFrom", "locked_from"));
+        hoSoNhanVien.setLockedTo(cellDate(row, headers, "lockedTo", "locked_to"));
+        hoSoNhanVien.setPrescriptionAccount(cellText(row, headers, "prescriptionAccount", "prescription_account"));
+        hoSoNhanVien.setPrescriptionPassword(cellText(row, headers, "prescriptionPassword", "prescription_password"));
+        hoSoNhanVien.setOnlineBooking(Objects.requireNonNullElse(cellBoolean(row, headers, "onlineBooking", "online_booking"), false));
+        hoSoNhanVien.setActive(Objects.requireNonNullElse(cellBoolean(row, headers, "active"), true));
+        hoSoNhanVien.setNote(cellText(row, headers, "note"));
+    }
+
+    private Map<String, Integer> readHeaders(Row row) {
+        if (row == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel thieu dong tieu de");
+        }
+        Map<String, Integer> headers = new HashMap<>();
+        for (Cell cell : row) {
+            String text = normalizeHeader(cellText(cell));
+            if (!text.isBlank()) {
+                headers.put(text, cell.getColumnIndex());
+            }
+        }
+        if (!headers.containsKey("code") && !headers.containsKey("ma_nhan_vien") && !headers.containsKey("ma_nv") && !headers.containsKey("ho_so_nhan_vien_code")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel thieu cot ma nhan vien");
+        }
+        if (!headers.containsKey("name") && !headers.containsKey("ho_ten") && !headers.containsKey("ho_va_ten") && !headers.containsKey("ten_nhan_vien") && !headers.containsKey("ho_so_nhan_vien_name")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel thieu cot ten nhan vien");
+        }
+        return headers;
+    }
+
+    private String cellText(Row row, Map<String, Integer> headers, String... names) {
+        Integer index = headerIndex(headers, names);
+        return index == null ? null : trim(cellText(row.getCell(index)));
+    }
+
+    private String cellText(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.STRING) {
+            return cell.getStringCellValue();
+        }
+        if (cell.getCellType() == CellType.NUMERIC) {
+            if (DateUtil.isCellDateFormatted(cell)) {
+                return cell.getLocalDateTimeCellValue().toLocalDate().toString();
+            }
+            double value = cell.getNumericCellValue();
+            long whole = (long) value;
+            return value == whole ? Long.toString(whole) : Double.toString(value);
+        }
+        if (cell.getCellType() == CellType.BOOLEAN) {
+            return Boolean.toString(cell.getBooleanCellValue());
+        }
+        if (cell.getCellType() == CellType.FORMULA) {
+            return cell.getCellFormula();
+        }
+        return null;
+    }
+
+    private LocalDate cellDate(Row row, Map<String, Integer> headers, String... names) {
+        Integer index = headerIndex(headers, names);
+        if (index == null) {
+            return null;
+        }
+        Cell cell = row.getCell(index);
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            return cell.getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        String text = trim(cellText(cell));
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        for (DateTimeFormatter formatter : EXCEL_DATE_FORMATS) {
+            try {
+                return LocalDate.parse(text, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngay trong file Excel khong dung dinh dang");
+    }
+
+    private Integer cellInteger(Row row, Map<String, Integer> headers, String... names) {
+        String text = cellText(row, headers, names);
+        return text == null || text.isBlank() ? null : Integer.parseInt(text);
+    }
+
+    private Integer cellGender(Row row, Map<String, Integer> headers, String... names) {
+        String text = cellText(row, headers, names);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String normalized = normalizeHeader(text);
+        if (normalized.equals("nam") || normalized.equals("male")) {
+            return 1;
+        }
+        if (normalized.equals("nu") || normalized.equals("female")) {
+            return 2;
+        }
+        if (normalized.equals("khac") || normalized.equals("other")) {
+            return 0;
+        }
+        return Integer.parseInt(text);
+    }
+
+    private Boolean cellBoolean(Row row, Map<String, Integer> headers, String... names) {
+        String text = cellText(row, headers, names);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String normalized = text.trim().toLowerCase(Locale.ROOT);
+        String noAccent = normalizeHeader(normalized);
+        return noAccent.equals("true") || noAccent.equals("1") || noAccent.equals("yes") || noAccent.equals("co") || noAccent.equals("x");
+    }
+
+    private Integer headerIndex(Map<String, Integer> headers, String... names) {
+        for (String name : names) {
+            Integer index = headers.get(normalizeHeader(name));
+            if (index != null) {
+                return index;
+            }
+        }
+        return null;
+    }
+
+    private boolean isBlankRow(Row row) {
+        for (Cell cell : row) {
+            String text = cellText(cell);
+            if (text != null && !text.isBlank()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String normalizeHeader(String value) {
+        if (value == null) {
+            return "";
+        }
+        String noAccent = Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D");
+        return noAccent.replaceAll("[^A-Za-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "")
+                .toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveSpecialtyId(String value) {
+        String text = trim(value);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        return chuyenKhoaRepository.findById(text)
+                .map(chuyenKhoa -> chuyenKhoa.getIdChuyenKhoa())
+                .or(() -> chuyenKhoaRepository.findByTenChuyenKhoaIgnoreCase(text).map(chuyenKhoa -> chuyenKhoa.getIdChuyenKhoa()))
+                .orElse(text);
+    }
+
+    private String resolvePositionCode(String value) {
+        String text = trim(value);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        return chucVuRepository.findById(text)
+                .map(chucVu -> chucVu.getMaChucVu())
+                .or(() -> chucVuRepository.findByMaChucVuIgnoreCase(text).map(chucVu -> chucVu.getMaChucVu()))
+                .or(() -> chucVuRepository.findByTenChucVuIgnoreCase(text).map(chucVu -> chucVu.getMaChucVu()))
+                .orElse(text);
+    }
+
+    private String resolveSpecialtyName(String specialtyId) {
+        if (specialtyId == null || specialtyId.isBlank()) {
+            return null;
+        }
+        return chuyenKhoaRepository.findById(specialtyId)
+                .map(chuyenKhoa -> chuyenKhoa.getTenChuyenKhoa())
+                .orElse(null);
+    }
+
+    private String resolvePositionName(String positionCode) {
+        if (positionCode == null || positionCode.isBlank()) {
+            return null;
+        }
+        return chucVuRepository.findByMaChucVuIgnoreCase(positionCode)
+                .map(chucVu -> chucVu.getTenChucVu())
+                .or(() -> chucVuRepository.findById(positionCode).map(chucVu -> chucVu.getTenChucVu()))
+                .orElse(null);
+    }
+
     private void validateLockedRange(LocalDate lockedFrom, LocalDate lockedTo) {
         if (lockedFrom != null && lockedTo != null && lockedFrom.isAfter(lockedTo)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoang ngay khoa ho so khong hop le");
@@ -351,7 +661,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         }
     }
 
-    private void validateNguoiDungLink(Long nguoiDungId, Long currentHoSoId) {
+    private void validateNguoiDungLink(String nguoiDungId, String currentHoSoId) {
         if (nguoiDungId == null) {
             return;
         }

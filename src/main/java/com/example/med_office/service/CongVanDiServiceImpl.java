@@ -33,7 +33,7 @@ public class CongVanDiServiceImpl implements CongVanDiService {
             int size,
             String keyword,
             String trangThai,
-            Integer nguoiKyId,
+            String nguoiKyId,
             LocalDate ngayBanHanhFrom,
             LocalDate ngayBanHanhTo
     ) {
@@ -63,7 +63,7 @@ public class CongVanDiServiceImpl implements CongVanDiService {
     private Specification<CongVanDi> buildSpecification(
             String keyword,
             String trangThai,
-            Integer nguoiKyId,
+            String nguoiKyId,
             LocalDate ngayBanHanhFrom,
             LocalDate ngayBanHanhTo
     ) {

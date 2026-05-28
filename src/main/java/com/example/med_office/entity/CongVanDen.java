@@ -1,5 +1,6 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,8 +9,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -22,8 +21,8 @@ import jakarta.persistence.Table;
 public class CongVanDen {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "so_cong_van", nullable = false, length = 100)
     private String soCongVan;
@@ -41,7 +40,7 @@ public class CongVanDen {
     private String donViGui;
 
     @Column(name = "don_vi_gui_id")
-    private Integer donViGuiId;
+    private String donViGuiId;
 
     @Column(name = "nguoi_ky", length = 255)
     private String nguoiKy;
@@ -59,10 +58,10 @@ public class CongVanDen {
     private String mucDoMat;
 
     @Column(name = "phong_ban_xu_ly_id")
-    private Integer phongBanXuLyId;
+    private String phongBanXuLyId;
 
     @Column(name = "nguoi_xu_ly_id")
-    private Integer nguoiXuLyId;
+    private String nguoiXuLyId;
 
     @Column(name = "nguon_nhan", length = 100)
     private String nguonNhan;
@@ -74,13 +73,13 @@ public class CongVanDen {
     private String doKhanXuLy;
 
     @Column(name = "loai_van_ban_id")
-    private Integer loaiVanBanId;
+    private String loaiVanBanId;
 
     @Column(name = "linh_vuc_id")
-    private Integer linhVucId;
+    private String linhVucId;
 
     @Column(name = "ho_so_id")
-    private Integer hoSoId;
+    private String hoSoId;
 
     @Column(name = "so_trang")
     private Integer soTrang;
@@ -119,14 +118,17 @@ public class CongVanDen {
     private Boolean isDeleted;
 
     @Column(name = "nguoi_tao_id")
-    private Integer nguoiTaoId;
+    private String nguoiTaoId;
 
     @Column(name = "nguoi_cap_nhat_id")
-    private Integer nguoiCapNhatId;
+    private String nguoiCapNhatId;
 
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (trangThai == null || trangThai.isBlank()) {
             trangThai = "MOI_TIEP_NHAN";
         }

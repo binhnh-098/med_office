@@ -3,6 +3,7 @@ package com.example.med_office.controller;
 import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.HoSoNhanVienRequest;
 import com.example.med_office.dto.HoSoNhanVienResponse;
+import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
 import com.example.med_office.service.HoSoNhanVienService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 
@@ -47,7 +49,7 @@ public class HoSoNhanVienController {
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Integer gender,
             @RequestParam(required = false) Boolean onlineBooking,
-            @RequestParam(required = false) Long nguoiDungId
+            @RequestParam(required = false) String nguoiDungId
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach ho so nhan vien thanh cong",
@@ -65,9 +67,22 @@ public class HoSoNhanVienController {
                 .body(content);
     }
 
+    @Operation(summary = "Import danh sach ho so nhan vien Excel")
+    @PostMapping(
+            path = {"/import", "/import-excel", "/upload"},
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ApiResponse<ImportResultResponse>> importExcel(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Import ho so nhan vien thanh cong",
+                hoSoNhanVienService.importExcel(file)
+        ));
+    }
+
     @Operation(summary = "Lay chi tiet ho so nhan vien")
     @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<HoSoNhanVienResponse>> findById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<HoSoNhanVienResponse>> findById(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay chi tiet ho so nhan vien thanh cong",
                 hoSoNhanVienService.findById(id)
@@ -86,7 +101,7 @@ public class HoSoNhanVienController {
     @Operation(summary = "Cap nhat ho so nhan vien")
     @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<HoSoNhanVienResponse>> update(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody HoSoNhanVienRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
@@ -97,7 +112,7 @@ public class HoSoNhanVienController {
 
     @Operation(summary = "Xoa ho so nhan vien")
     @DeleteMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Object>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Object>> delete(@PathVariable String id) {
         hoSoNhanVienService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa ho so nhan vien thanh cong", null));
     }

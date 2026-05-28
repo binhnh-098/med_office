@@ -6,14 +6,16 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Optional;
 
-public interface HoSoNhanVienRepository extends JpaRepository<HoSoNhanVien, Long>, JpaSpecificationExecutor<HoSoNhanVien> {
+public interface HoSoNhanVienRepository extends JpaRepository<HoSoNhanVien, String>, JpaSpecificationExecutor<HoSoNhanVien> {
     boolean existsByCodeIgnoreCase(String code);
 
-    boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
+    Optional<HoSoNhanVien> findByCodeIgnoreCase(String code);
 
-    boolean existsByNguoiDungId(Long nguoiDungId);
+    boolean existsByCodeIgnoreCaseAndIdNot(String code, String id);
 
-    boolean existsByNguoiDungIdAndIdNot(Long nguoiDungId, Long id);
+    boolean existsByNguoiDungId(String nguoiDungId);
 
-    Optional<HoSoNhanVien> findByNguoiDungId(Long nguoiDungId);
+    boolean existsByNguoiDungIdAndIdNot(String nguoiDungId, String id);
+
+    Optional<HoSoNhanVien> findByNguoiDungId(String nguoiDungId);
 }

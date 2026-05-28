@@ -12,26 +12,26 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "CongVanDenResponse")
 public class CongVanDenResponse {
 
-    private final Long id;
+    private final String id;
     private final String soCongVan;
     private final String soDen;
     private final String tieuDe;
     private final String noiDungTomTat;
-    private final Integer donViGuiId;
+    private final String donViGuiId;
     private final String donViGui;
     private final String nguoiKy;
     private final LocalDate ngayVanBan;
     private final LocalDate ngayNhan;
     private final String mucDoKhan;
     private final String mucDoMat;
-    private final Integer phongBanXuLyId;
-    private final Integer nguoiXuLyId;
+    private final String phongBanXuLyId;
+    private final String nguoiXuLyId;
     private final String nguonNhan;
     private final LocalDate hanXuLy;
     private final String doKhanXuLy;
-    private final Integer loaiVanBanId;
-    private final Integer linhVucId;
-    private final Integer hoSoId;
+    private final String loaiVanBanId;
+    private final String linhVucId;
+    private final String hoSoId;
     private final Integer soTrang;
     private final Integer soBan;
     private final String trichYeu;
@@ -45,30 +45,30 @@ public class CongVanDenResponse {
     private final Boolean daDoc;
     private final Boolean daXuLy;
     private final Boolean isDeleted;
-    private final Integer nguoiTaoId;
-    private final Integer nguoiCapNhatId;
+    private final String nguoiTaoId;
+    private final String nguoiCapNhatId;
 
     public CongVanDenResponse(
-            Long id,
+            String id,
             String soCongVan,
             String soDen,
             String tieuDe,
             String noiDungTomTat,
-            Integer donViGuiId,
+            String donViGuiId,
             String donViGui,
             String nguoiKy,
             LocalDate ngayVanBan,
             LocalDate ngayNhan,
             String mucDoKhan,
             String mucDoMat,
-            Integer phongBanXuLyId,
-            Integer nguoiXuLyId,
+            String phongBanXuLyId,
+            String nguoiXuLyId,
             String nguonNhan,
             LocalDate hanXuLy,
             String doKhanXuLy,
-            Integer loaiVanBanId,
-            Integer linhVucId,
-            Integer hoSoId,
+            String loaiVanBanId,
+            String linhVucId,
+            String hoSoId,
             Integer soTrang,
             Integer soBan,
             String trichYeu,
@@ -81,8 +81,8 @@ public class CongVanDenResponse {
             Boolean daDoc,
             Boolean daXuLy,
             Boolean isDeleted,
-            Integer nguoiTaoId,
-            Integer nguoiCapNhatId
+            String nguoiTaoId,
+            String nguoiCapNhatId
     ) {
         this.id = id;
         this.soCongVan = soCongVan;

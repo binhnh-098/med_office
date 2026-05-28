@@ -12,7 +12,7 @@ public interface CongVanDiService {
             int size,
             String keyword,
             String trangThai,
-            Integer nguoiKyId,
+            String nguoiKyId,
             LocalDate ngayBanHanhFrom,
             LocalDate ngayBanHanhTo
     );

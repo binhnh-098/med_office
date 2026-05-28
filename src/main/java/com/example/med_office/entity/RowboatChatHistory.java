@@ -1,12 +1,11 @@
 package com.example.med_office.entity;
 
+import com.example.med_office.utils.UuidUtils;
 import lombok.Getter;
 import lombok.Setter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
@@ -21,8 +20,8 @@ import java.time.LocalDateTime;
 public class RowboatChatHistory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 36)
+    private String id;
 
     @Column(name = "username", length = 100)
     private String username;
@@ -52,6 +51,9 @@ public class RowboatChatHistory {
 
     @PrePersist
     public void prePersist() {
+        if (id == null || id.isBlank()) {
+            id = UuidUtils.newUuid();
+        }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }

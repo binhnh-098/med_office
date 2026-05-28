@@ -15,7 +15,7 @@ public interface CongVanDenService {
             int size,
             String keyword,
             String trangThai,
-            Integer donViGuiId,
+            String donViGuiId,
             Boolean daXuLy,
             Boolean daDoc,
             LocalDate ngayNhanFrom,

@@ -11,25 +11,25 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "CongVanDiResponse")
 public class CongVanDiResponse {
 
-    private final Long id;
+    private final String id;
     private final String soCongVan;
     private final String tieuDe;
     private final String noiDungTomTat;
     private final String donViNhan;
     private final LocalDate ngayBanHanh;
-    private final Integer nguoiKyId;
+    private final String nguoiKyId;
     private final String trangThai;
     private final LocalDateTime ngayTao;
     private final LocalDateTime ngayCapNhat;
 
     public CongVanDiResponse(
-            Long id,
+            String id,
             String soCongVan,
             String tieuDe,
             String noiDungTomTat,
             String donViNhan,
             LocalDate ngayBanHanh,
-            Integer nguoiKyId,
+            String nguoiKyId,
             String trangThai,
             LocalDateTime ngayTao,
             LocalDateTime ngayCapNhat
