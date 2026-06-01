@@ -1,0 +1,37 @@
+USE med_office;
+
+ALTER TABLE chuc_vu
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE nha_cung_cap
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE nguoi_dung
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE ho_so_nhan_vien
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE chuyen_khoa
+    MODIFY COLUMN id_chuyen_khoa CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE cong_van_den
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE cong_van_di
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE rowboat_chat_histories
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE doctor_meal_registrations
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE doctor_meal_registration_items
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE doctor_meal_registration_item_snapshots
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
+
+ALTER TABLE doctor_meal_dishes
+    MODIFY COLUMN id CHAR(36) NOT NULL DEFAULT (UUID());
