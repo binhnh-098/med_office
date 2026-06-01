@@ -39,7 +39,7 @@ public class CongVanDi {
     @Column(name = "ngay_ban_hanh")
     private LocalDate ngayBanHanh;
 
-    @Column(name = "nguoi_ky_id")
+    @Column(name = "nguoi_ky_id", length = 36)
     private String nguoiKyId;
 
     @Column(name = "trang_thai", length = 50)

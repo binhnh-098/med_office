@@ -15,10 +15,6 @@ public record ChucVuRequest(
         @NotBlank(message = "Ten chuc vu khong duoc de trong")
         @Size(max = 255, message = "Ten chuc vu must not exceed 255 characters")
         @JsonAlias({"ten_chuc_vu", "name"})
-        String tenChucVu,
-
-        @NotBlank(message = "User id khong duoc de trong")
-        @JsonAlias({"user_id", "userid", "nguoi_dung_id"})
-        String userId
+        String tenChucVu
 ) {
 }

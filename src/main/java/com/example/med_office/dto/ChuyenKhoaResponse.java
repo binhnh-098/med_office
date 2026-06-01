@@ -11,7 +11,7 @@ public record ChuyenKhoaResponse(
         @JsonProperty("ten_chuyen_khoa")
         String tenChuyenKhoa,
 
-        @JsonProperty("user_id")
+        @JsonProperty("nguoi_dung_id")
         String userId
 ) {
 }

@@ -77,10 +77,11 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            String nguoiDungId
+            String nguoiDungId,
+            Boolean hasNguoiDungId
     ) {
         Page<HoSoNhanVien> result = hoSoNhanVienRepository.findAll(
-                buildSpecification(keyword, active, gender, onlineBooking, nguoiDungId),
+                buildSpecification(keyword, active, gender, onlineBooking, nguoiDungId, hasNguoiDungId),
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"))
         );
 
@@ -263,11 +264,11 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            String nguoiDungId
+            String nguoiDungId,
+            Boolean hasNguoiDungId
     ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-
             if (keyword != null && !keyword.isBlank()) {
                 String normalizedKeyword = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
                 predicates.add(criteriaBuilder.or(
@@ -297,6 +298,12 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
             if (nguoiDungId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("nguoiDungId"), nguoiDungId));
+            }
+
+            if (hasNguoiDungId != null) {
+                predicates.add(hasNguoiDungId
+                        ? criteriaBuilder.isNotNull(root.get("nguoiDungId"))
+                        : criteriaBuilder.isNull(root.get("nguoiDungId")));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

@@ -49,11 +49,12 @@ public class HoSoNhanVienController {
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Integer gender,
             @RequestParam(required = false) Boolean onlineBooking,
-            @RequestParam(required = false) String nguoiDungId
+            @RequestParam(required = false) String nguoiDungId,
+            @RequestParam(required = false) Boolean hasNguoiDungId
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach ho so nhan vien thanh cong",
-                hoSoNhanVienService.findAll(page, size, keyword, active, gender, onlineBooking, nguoiDungId)
+                hoSoNhanVienService.findAll(page, size, keyword, active, gender, onlineBooking, nguoiDungId, hasNguoiDungId)
         ));
     }
 

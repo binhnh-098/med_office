@@ -1,6 +1,6 @@
 package com.example.med_office.config;
 
-import com.example.med_office.security.AppPermissions;
+import com.example.med_office.security.PermissionCatalog;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -38,35 +38,73 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/signup").hasAnyRole(AppPermissions.ADMIN_ROLES)
-                        .requestMatchers("/api/nguoi-dung/**").hasAnyRole(AppPermissions.ADMIN_ROLES)
-                        .requestMatchers("/api/chuc-vu/**").hasAnyRole(AppPermissions.ADMIN_ROLES)
+                        .requestMatchers(HttpMethod.POST, "/api/signup").hasAuthority(PermissionCatalog.SYSTEM_ACCOUNTS_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/nguoi-dung", "/api/nguoi-dung/**")
+                        .hasAuthority(PermissionCatalog.SYSTEM_ACCOUNTS_VIEW)
+                        .requestMatchers(HttpMethod.PUT, "/api/nguoi-dung/**")
+                        .hasAuthority(PermissionCatalog.SYSTEM_ACCOUNTS_UPDATE)
+                        .requestMatchers("/api/admin/**").hasAuthority(PermissionCatalog.SYSTEM_PERMISSIONS_MANAGE)
+                        .requestMatchers("/api/chuc-vu/**").hasAuthority(PermissionCatalog.EMPLOYEES_ORGANIZATION_VIEW)
                         .requestMatchers(HttpMethod.GET, "/api/chuyen-khoa", "/api/chuyen-khoa/**")
-                        .hasAnyRole(AppPermissions.STAFF_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_ORGANIZATION_VIEW)
                         .requestMatchers(HttpMethod.POST, "/api/chuyen-khoa", "/api/chuyen-khoa/**")
-                        .hasAnyRole(AppPermissions.SPECIALTY_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.PUT, "/api/chuyen-khoa/**")
-                        .hasAnyRole(AppPermissions.SPECIALTY_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.DELETE, "/api/chuyen-khoa/**")
-                        .hasAnyRole(AppPermissions.SPECIALTY_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.GET, "/api/ho-so-nhan-vien", "/api/ho-so-nhan-vien/**")
-                        .hasAnyRole(AppPermissions.PROFILE_READ_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_VIEW)
                         .requestMatchers(HttpMethod.POST, "/api/ho-so-nhan-vien", "/api/ho-so-nhan-vien/**")
-                        .hasAnyRole(AppPermissions.PROFILE_WRITE_ROLES)
+                        .hasAnyAuthority(PermissionCatalog.EMPLOYEES_CREATE, PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.PUT, "/api/ho-so-nhan-vien/**")
-                        .hasAnyRole(AppPermissions.PROFILE_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.DELETE, "/api/ho-so-nhan-vien/**")
-                        .hasAnyRole(AppPermissions.PROFILE_WRITE_ROLES)
-                        .requestMatchers("/api/cong-van-den/**", "/api/cong-van-di/**")
-                        .hasAnyRole(AppPermissions.DOCUMENT_ROLES)
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/cong-van-den", "/api/cong-van-den/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_INCOMING_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/cong-van-den", "/api/cong-van-den/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_INCOMING_UPDATE)
+                        .requestMatchers(HttpMethod.PUT, "/api/cong-van-den/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_INCOMING_UPDATE)
+                        .requestMatchers(HttpMethod.DELETE, "/api/cong-van-den/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_INCOMING_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/cong-van-di", "/api/cong-van-di/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_OUTGOING_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/cong-van-di", "/api/cong-van-di/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_OUTGOING_UPDATE)
+                        .requestMatchers(HttpMethod.PUT, "/api/cong-van-di/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_OUTGOING_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/reference-documents/**")
+                        .hasAuthority(PermissionCatalog.DOCUMENTS_REFERENCE_VIEW)
                         .requestMatchers(HttpMethod.POST, "/api/doctor-meals/dishes", "/api/doctor-meals/dishes/**")
-                        .hasAnyRole(AppPermissions.MEAL_MENU_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_UPDATE)
                         .requestMatchers(HttpMethod.PUT, "/api/doctor-meals/dishes/**")
-                        .hasAnyRole(AppPermissions.MEAL_MENU_WRITE_ROLES)
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_UPDATE)
                         .requestMatchers(HttpMethod.DELETE, "/api/doctor-meals/dishes/**")
-                        .hasAnyRole(AppPermissions.MEAL_MENU_WRITE_ROLES)
-                        .requestMatchers("/api/doctor-meals/**").hasAnyRole(AppPermissions.MEAL_ROLES)
-                        .requestMatchers("/api/rowboat/**").hasAnyRole(AppPermissions.ROWBOAT_ROLES)
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_UPDATE)
+                        .requestMatchers(HttpMethod.POST, "/api/doctor-meals/registrations", "/api/doctor-meals/registrations/**")
+                        .hasAuthority(PermissionCatalog.MEALS_DOCTOR_UPDATE)
+                        .requestMatchers("/api/doctor-meals/**").hasAuthority(PermissionCatalog.MEALS_DOCTOR_VIEW)
+                        .requestMatchers(HttpMethod.GET, "/api/meals/weekly-menu", "/api/meals/weekly-menu/**")
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/meals/weekly-menu", "/api/meals/weekly-menu/**")
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_UPDATE)
+                        .requestMatchers(HttpMethod.PUT, "/api/meals/weekly-menu/**")
+                        .hasAuthority(PermissionCatalog.MEALS_WEEKLY_MENU_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/meals/doctor", "/api/meals/doctor/**")
+                        .hasAuthority(PermissionCatalog.MEALS_DOCTOR_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/meals/doctor", "/api/meals/doctor/**")
+                        .hasAuthority(PermissionCatalog.MEALS_DOCTOR_UPDATE)
+                        .requestMatchers(HttpMethod.PUT, "/api/meals/doctor/**")
+                        .hasAuthority(PermissionCatalog.MEALS_DOCTOR_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/meals/patient", "/api/meals/patient/**")
+                        .hasAuthority(PermissionCatalog.MEALS_PATIENT_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/meals/patient", "/api/meals/patient/**")
+                        .hasAuthority(PermissionCatalog.MEALS_PATIENT_UPDATE)
+                        .requestMatchers(HttpMethod.PUT, "/api/meals/patient/**")
+                        .hasAuthority(PermissionCatalog.MEALS_PATIENT_UPDATE)
+                        .requestMatchers("/api/rowboat/**").hasAuthority(PermissionCatalog.OVERVIEW_DASHBOARD_VIEW)
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
@@ -101,7 +139,7 @@ public class SecurityConfig {
             response.getWriter().write("""
                     {
                       "code": 401,
-                      "message": "Authentication is required",
+                      "message": "Bạn cần đăng nhập để tiếp tục.",
                       "data": null
                     }
                     """.trim());
@@ -116,7 +154,7 @@ public class SecurityConfig {
             response.getWriter().write("""
                     {
                       "code": 403,
-                      "message": "Access is denied",
+                      "message": "Bạn không có quyền thực hiện chức năng này.",
                       "data": null
                     }
                     """.trim());

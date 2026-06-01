@@ -17,6 +17,9 @@ public class LoginResponse {
     @Schema(example = "10")
     private final String hoSoNhanVienId;
 
+    @Schema(example = "NV001")
+    private final String hoSoNhanVienCode;
+
     @Schema(example = "reception")
     private final String username;
 
@@ -41,8 +44,13 @@ public class LoginResponse {
     @Schema(example = "Bac si")
     private final String positionName;
 
-    @Schema(example = "[\"USER\", \"BAC_SI\"]")
-    private final List<String> roles;
+    private final List<RoleResponse> roles;
+
+    @Schema(example = "[\"overview.dashboard.view\", \"employees.directory.view\"]")
+    private final List<String> permissions;
+
+    @Schema(example = "false")
+    private final boolean isAdmin;
 
     @Schema(example = "[\"DASHBOARD\", \"HO_SO_NHAN_VIEN\", \"DOCTOR_MEALS\"]")
     private final List<String> modules;
@@ -53,6 +61,7 @@ public class LoginResponse {
     public LoginResponse(
             String id,
             String hoSoNhanVienId,
+            String hoSoNhanVienCode,
             String username,
             String fullName,
             String status,
@@ -61,12 +70,15 @@ public class LoginResponse {
             String departmentId,
             String positionId,
             String positionName,
-            List<String> roles,
+            List<RoleResponse> roles,
+            List<String> permissions,
+            boolean isAdmin,
             List<String> modules,
             LocalDateTime lastLoginAt
     ) {
         this.id = id;
         this.hoSoNhanVienId = hoSoNhanVienId;
+        this.hoSoNhanVienCode = hoSoNhanVienCode;
         this.username = username;
         this.fullName = fullName;
         this.status = status;
@@ -76,6 +88,8 @@ public class LoginResponse {
         this.positionId = positionId;
         this.positionName = positionName;
         this.roles = roles == null ? List.of() : List.copyOf(roles);
+        this.permissions = permissions == null ? List.of() : List.copyOf(permissions);
+        this.isAdmin = isAdmin;
         this.modules = modules == null ? List.of() : List.copyOf(modules);
         this.lastLoginAt = lastLoginAt;
     }

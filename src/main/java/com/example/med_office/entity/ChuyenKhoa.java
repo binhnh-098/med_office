@@ -22,7 +22,7 @@ public class ChuyenKhoa {
     @Column(name = "ten_chuyen_khoa", nullable = false, length = 255)
     private String tenChuyenKhoa;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "nguoi_dung_id", nullable = false, length = 36)
     private String userId;
 
     @PrePersist

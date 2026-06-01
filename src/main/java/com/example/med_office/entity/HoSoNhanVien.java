@@ -25,99 +25,99 @@ public class HoSoNhanVien {
     @Column(name = "id", length = 36)
     private String id;
 
-    @Column(name = "nguoi_dung_id", unique = true)
+    @Column(name = "nguoi_dung_id", unique = true, length = 36)
     private String nguoiDungId;
 
-    @Column(name = "code", nullable = false, unique = true, length = 50)
+    @Column(name = "ma_nhan_vien", nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "ten_nhan_vien", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "birth_date")
+    @Column(name = "ngay_sinh")
     private LocalDate birthDate;
 
-    @Column(name = "gender")
+    @Column(name = "gioi_tinh")
     private Integer gender;
 
-    @Column(name = "identity_number", length = 50)
+    @Column(name = "so_dinh_danh", length = 50)
     private String identityNumber;
 
-    @Column(name = "social_insurance", length = 50)
+    @Column(name = "so_bao_hiem_xa_hoi", length = 50)
     private String socialInsurance;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "thu_dien_tu", length = 255)
     private String email;
 
-    @Column(name = "phone", length = 20)
+    @Column(name = "so_dien_thoai", length = 20)
     private String phone;
 
-    @Column(name = "degree", length = 100)
+    @Column(name = "bang_cap", length = 100)
     private String degree;
 
-    @Column(name = "specialty", length = 255)
+    @Column(name = "chuyen_khoa", length = 255)
     private String specialty;
 
-    @Column(name = "academic_title", length = 100)
+    @Column(name = "hoc_ham", length = 100)
     private String academicTitle;
 
-    @Column(name = "academic_title_name", length = 255)
+    @Column(name = "ten_hoc_ham", length = 255)
     private String academicTitleName;
 
-    @Column(name = "certificate", length = 100)
+    @Column(name = "chung_chi", length = 100)
     private String certificate;
 
-    @Column(name = "position_code", length = 100)
+    @Column(name = "ma_chuc_vu", length = 100)
     private String position;
 
-    @Column(name = "honor_title", length = 255)
+    @Column(name = "danh_hieu", length = 255)
     private String honorTitle;
 
-    @Column(name = "signing_pin", length = 255)
+    @Column(name = "ma_pin_ky", length = 255)
     private String signingPin;
 
-    @Column(name = "signing_account", length = 255)
+    @Column(name = "tai_khoan_ky", length = 255)
     private String signingAccount;
 
-    @Column(name = "signing_otp", length = 255)
+    @Column(name = "otp_ky", length = 255)
     private String signingOtp;
 
-    @Column(name = "invoice_password", length = 255)
+    @Column(name = "mat_khau_hoa_don", length = 255)
     private String invoicePassword;
 
     @Lob
-    @Column(name = "avatar_image", columnDefinition = "LONGTEXT")
+    @Column(name = "anh_dai_dien", columnDefinition = "LONGTEXT")
     private String avatarImage;
 
     @Lob
-    @Column(name = "signature_image", columnDefinition = "LONGTEXT")
+    @Column(name = "anh_chu_ky", columnDefinition = "LONGTEXT")
     private String signatureImage;
 
-    @Column(name = "locked_from")
+    @Column(name = "khoa_tu_ngay")
     private LocalDate lockedFrom;
 
-    @Column(name = "locked_to")
+    @Column(name = "khoa_den_ngay")
     private LocalDate lockedTo;
 
-    @Column(name = "prescription_account", length = 255)
+    @Column(name = "tai_khoan_ke_don", length = 255)
     private String prescriptionAccount;
 
-    @Column(name = "prescription_password", length = 255)
+    @Column(name = "mat_khau_ke_don", length = 255)
     private String prescriptionPassword;
 
-    @Column(name = "online_booking")
+    @Column(name = "dat_lich_truc_tuyen")
     private Boolean onlineBooking;
 
-    @Column(name = "active")
+    @Column(name = "dang_hoat_dong")
     private Boolean active;
 
-    @Column(name = "note", length = 2000)
+    @Column(name = "ghi_chu", length = 2000)
     private String note;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "ngay_tao", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
     @PrePersist

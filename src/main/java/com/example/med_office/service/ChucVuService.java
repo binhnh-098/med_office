@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ChucVuService {
 
-    List<ChucVuResponse> findAll(String userId);
+    List<ChucVuResponse> findAll();
 
     ChucVuResponse findById(String id);
 

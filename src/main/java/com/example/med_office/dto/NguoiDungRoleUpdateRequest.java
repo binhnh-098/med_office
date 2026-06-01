@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Schema(name = "NguoiDungRoleUpdateRequest")
@@ -19,4 +21,8 @@ public class NguoiDungRoleUpdateRequest {
     @JsonAlias({"position_code", "ma_chuc_vu"})
     @Schema(example = "BAC_SI")
     private String maChucVu;
+
+    @JsonAlias({"role_codes", "vai_tro"})
+    @Schema(example = "[\"BAC_SI\", \"DINH_DUONG\"]")
+    private List<@Size(max = 50, message = "Role code must be at most 50 characters") String> roleCodes;
 }

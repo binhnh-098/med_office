@@ -4,7 +4,6 @@ import com.example.med_office.dto.ChucVuRequest;
 import com.example.med_office.dto.ChucVuResponse;
 import com.example.med_office.entity.ChucVu;
 import com.example.med_office.repository.ChucVuRepository;
-import com.example.med_office.repository.NguoiDungRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,24 +16,15 @@ import java.util.List;
 public class ChucVuServiceImpl implements ChucVuService {
 
     private final ChucVuRepository chucVuRepository;
-    private final NguoiDungRepository nguoiDungRepository;
 
-    public ChucVuServiceImpl(
-            ChucVuRepository chucVuRepository,
-            NguoiDungRepository nguoiDungRepository
-    ) {
+    public ChucVuServiceImpl(ChucVuRepository chucVuRepository) {
         this.chucVuRepository = chucVuRepository;
-        this.nguoiDungRepository = nguoiDungRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ChucVuResponse> findAll(String userId) {
-        List<ChucVu> chucVuList = userId == null
-                ? chucVuRepository.findAll()
-                : chucVuRepository.findByUserIdOrderByTenChucVuAscIdAsc(userId);
-
-        return chucVuList.stream()
+    public List<ChucVuResponse> findAll() {
+        return chucVuRepository.findAll().stream()
                 .sorted(Comparator
                         .comparing(ChucVu::getTenChucVu, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(ChucVu::getId))
@@ -53,13 +43,13 @@ public class ChucVuServiceImpl implements ChucVuService {
     public ChucVuResponse create(ChucVuRequest request) {
         String maChucVu = trim(request.maChucVu());
         String tenChucVu = trim(request.tenChucVu());
-        validateRequest(maChucVu, tenChucVu, request.userId());
-        if (chucVuRepository.existsByUserIdAndMaChucVuIgnoreCase(request.userId(), maChucVu)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma chuc vu cua nguoi dung da ton tai");
+        validateRequest(maChucVu, tenChucVu);
+        if (chucVuRepository.existsByMaChucVuIgnoreCase(maChucVu)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma chuc vu da ton tai");
         }
 
         ChucVu chucVu = new ChucVu();
-        applyRequest(chucVu, maChucVu, tenChucVu, request.userId());
+        applyRequest(chucVu, maChucVu, tenChucVu);
         return toResponse(chucVuRepository.save(chucVu));
     }
 
@@ -69,12 +59,12 @@ public class ChucVuServiceImpl implements ChucVuService {
         ChucVu chucVu = findChucVu(id);
         String maChucVu = trim(request.maChucVu());
         String tenChucVu = trim(request.tenChucVu());
-        validateRequest(maChucVu, tenChucVu, request.userId());
-        if (chucVuRepository.existsByUserIdAndMaChucVuIgnoreCaseAndIdNot(request.userId(), maChucVu, id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma chuc vu cua nguoi dung da ton tai");
+        validateRequest(maChucVu, tenChucVu);
+        if (chucVuRepository.existsByMaChucVuIgnoreCaseAndIdNot(maChucVu, id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma chuc vu da ton tai");
         }
 
-        applyRequest(chucVu, maChucVu, tenChucVu, request.userId());
+        applyRequest(chucVu, maChucVu, tenChucVu);
         return toResponse(chucVuRepository.save(chucVu));
     }
 
@@ -89,24 +79,17 @@ public class ChucVuServiceImpl implements ChucVuService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay chuc vu"));
     }
 
-    private void applyRequest(ChucVu chucVu, String maChucVu, String tenChucVu, String userId) {
+    private void applyRequest(ChucVu chucVu, String maChucVu, String tenChucVu) {
         chucVu.setMaChucVu(maChucVu);
         chucVu.setTenChucVu(tenChucVu);
-        chucVu.setUserId(userId);
     }
 
-    private void validateRequest(String maChucVu, String tenChucVu, String userId) {
+    private void validateRequest(String maChucVu, String tenChucVu) {
         if (maChucVu == null || maChucVu.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma chuc vu khong duoc de trong");
         }
         if (tenChucVu == null || tenChucVu.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten chuc vu khong duoc de trong");
-        }
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id khong duoc de trong");
-        }
-        if (!nguoiDungRepository.existsById(userId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nguoi dung khong ton tai");
         }
     }
 
@@ -114,8 +97,7 @@ public class ChucVuServiceImpl implements ChucVuService {
         return new ChucVuResponse(
                 chucVu.getId(),
                 chucVu.getMaChucVu(),
-                chucVu.getTenChucVu(),
-                chucVu.getUserId()
+                chucVu.getTenChucVu()
         );
     }
 

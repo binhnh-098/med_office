@@ -29,9 +29,6 @@ public class ChucVu {
     @Column(name = "ten_chuc_vu", nullable = false, length = 255)
     private String tenChucVu;
 
-    @Column(name = "user_id")
-    private String userId;
-
     @Column(name = "cap_bac")
     private Integer capBac;
 

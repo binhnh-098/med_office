@@ -11,9 +11,6 @@ public record ChucVuResponse(
         String maChucVu,
 
         @JsonProperty("ten_chuc_vu")
-        String tenChucVu,
-
-        @JsonProperty("user_id")
-        String userId
+        String tenChucVu
 ) {
 }

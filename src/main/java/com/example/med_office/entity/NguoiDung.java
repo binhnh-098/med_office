@@ -28,19 +28,10 @@ public class NguoiDung {
     @Column(name = "mat_khau_ma_hoa", nullable = false, length = 255)
     private String matKhauMaHoa;
 
-    @Column(name = "ho_ten", nullable = false, length = 255)
-    private String hoTen;
-
-    @Column(name = "email", length = 255)
-    private String email;
-
-    @Column(name = "so_dien_thoai", length = 20)
-    private String soDienThoai;
-
-    @Column(name = "phong_ban_id")
+    @Column(name = "phong_ban_id", length = 36)
     private String phongBanId;
 
-    @Column(name = "chuc_vu_id")
+    @Column(name = "chuc_vu_id", length = 36)
     private String chucVuId;
 
     @Column(name = "trang_thai", nullable = false, length = 50)

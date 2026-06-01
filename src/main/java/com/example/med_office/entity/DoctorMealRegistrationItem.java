@@ -22,7 +22,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "doctor_meal_registration_items")
+@Table(name = "chi_tiet_dang_ky_bua_an_bac_si")
 public class DoctorMealRegistrationItem {
 
     @Id
@@ -30,25 +30,25 @@ public class DoctorMealRegistrationItem {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "registration_id", nullable = false)
+    @JoinColumn(name = "dang_ky_id", nullable = false)
     private DoctorMealRegistration registration;
 
-    @Column(name = "meal_date", nullable = false)
+    @Column(name = "ngay_an", nullable = false)
     private LocalDate date;
 
-    @Column(name = "day_of_week", length = 32)
+    @Column(name = "thu_trong_tuan", length = 32)
     private String dayOfWeek;
 
-    @Column(name = "meal_id", length = 32)
+    @Column(name = "ma_bua_an", length = 32)
     private String mealId;
 
-    @Column(name = "meal_label", length = 32)
+    @Column(name = "ten_bua_an", length = 32)
     private String mealLabel;
 
-    @Column(name = "meal_quantity", nullable = false)
+    @Column(name = "so_luong_bua_an", nullable = false)
     private Integer mealQuantity;
 
-    @Column(name = "meal_amount", nullable = false, precision = 12, scale = 2)
+    @Column(name = "thanh_tien_bua_an", nullable = false, precision = 12, scale = 2)
     private BigDecimal mealAmount;
 
     @OneToMany(mappedBy = "registrationItem", cascade = CascadeType.ALL, orphanRemoval = true)

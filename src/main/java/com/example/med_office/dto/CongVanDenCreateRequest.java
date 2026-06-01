@@ -118,7 +118,7 @@ public class CongVanDenCreateRequest {
     @JsonAlias("da_xu_ly")
     private Boolean daXuLy;
 
-    @JsonAlias("is_deleted")
+    @JsonAlias({"is_deleted", "da_xoa"})
     private Boolean isDeleted;
 
     @JsonAlias("nguoi_tao_id")

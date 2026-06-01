@@ -16,37 +16,37 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "rowboat_chat_histories")
+@Table(name = "lich_su_chat_rowboat")
 public class RowboatChatHistory {
 
     @Id
     @Column(name = "id", length = 36)
     private String id;
 
-    @Column(name = "username", length = 100)
+    @Column(name = "ten_dang_nhap", length = 100)
     private String username;
 
-    @Column(name = "user_message", length = 4000)
+    @Column(name = "tin_nhan_nguoi_dung", length = 4000)
     private String userMessage;
 
-    @Column(name = "assistant_message", length = 4000)
+    @Column(name = "tin_nhan_tro_ly", length = 4000)
     private String assistantMessage;
 
     @Lob
-    @Column(name = "request_state_json")
+    @Column(name = "trang_thai_yeu_cau_json")
     private String requestStateJson;
 
     @Lob
-    @Column(name = "response_state_json")
+    @Column(name = "trang_thai_phan_hoi_json")
     private String responseStateJson;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "trang_thai", nullable = false, length = 20)
     private String status;
 
-    @Column(name = "error_message", length = 2000)
+    @Column(name = "thong_bao_loi", length = 2000)
     private String errorMessage;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "ngay_tao", nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

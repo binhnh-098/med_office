@@ -29,11 +29,17 @@ public class ChuyenKhoaServiceImpl implements ChuyenKhoaService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ChuyenKhoaResponse> findAll(String userId) {
-        List<ChuyenKhoa> chuyenKhoaList = userId == null
-                ? chuyenKhoaRepository.findAll()
-                : chuyenKhoaRepository.findByUserIdOrderByTenChuyenKhoaAscIdChuyenKhoaAsc(userId);
+    public List<ChuyenKhoaResponse> findAll() {
+        return toSortedResponses(chuyenKhoaRepository.findAll());
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChuyenKhoaResponse> findByUserId(String userId) {
+        return toSortedResponses(chuyenKhoaRepository.findByUserIdOrderByTenChuyenKhoaAscIdChuyenKhoaAsc(userId));
+    }
+
+    private List<ChuyenKhoaResponse> toSortedResponses(List<ChuyenKhoa> chuyenKhoaList) {
         return chuyenKhoaList.stream()
                 .sorted(Comparator
                         .comparing(ChuyenKhoa::getTenChuyenKhoa, String.CASE_INSENSITIVE_ORDER)

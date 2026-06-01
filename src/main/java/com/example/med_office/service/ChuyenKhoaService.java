@@ -7,7 +7,9 @@ import java.util.List;
 
 public interface ChuyenKhoaService {
 
-    List<ChuyenKhoaResponse> findAll(String userId);
+    List<ChuyenKhoaResponse> findAll();
+
+    List<ChuyenKhoaResponse> findByUserId(String userId);
 
     ChuyenKhoaResponse findById(String idChuyenKhoa);
 

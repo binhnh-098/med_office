@@ -145,14 +145,14 @@ Requires a logged-in account with role `GIAM_DOC`.
 {
   "username": "doctor3",
   "password": "clinic123",
-  "fullName": "Nguyen Van A",
-  "email": "doctor3@example.com",
-  "phoneNumber": "0900000000",
-  "maChucVu": "BAC_SI"
+  "hoSoNhanVienId": "44444444-4444-4444-4444-444444444441",
+  "chucVuId": "11111111-1111-1111-1111-111111111113"
 }
 ```
 
-Passwords are hashed before saving. You can assign a role by either `maChucVu` or `chucVuId`.
+Passwords are hashed before saving. The selected employee profile is linked to the new account in the same transaction.
+
+Use `GET /api/ho-so-nhan-vien?hasNguoiDungId=false&size=100` to load employee profiles that do not have an account yet.
 
 ### Manage User Roles
 

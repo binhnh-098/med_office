@@ -80,7 +80,8 @@ public class AuthApiController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Signup successful"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request body"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Username already exists")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee profile or position does not exist"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Username already exists or employee profile already has an account")
     })
     @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<LoginResponse>> signup(@Valid @RequestBody SignupRequest request) {

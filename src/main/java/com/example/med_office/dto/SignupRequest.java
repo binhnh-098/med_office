@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Getter
@@ -37,9 +38,23 @@ public class SignupRequest {
     @Schema(example = "0900000000")
     private String phoneNumber;
 
+    @NotBlank(message = "Position id must not be blank")
+    @Pattern(
+            regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            message = "Position id must be a valid UUID"
+    )
     @JsonAlias({"position_id", "chuc_vu_id"})
     @Schema(example = "11111111-1111-1111-1111-111111111113")
     private String chucVuId;
+
+    @NotBlank(message = "Employee profile id must not be blank")
+    @Pattern(
+            regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            message = "Employee profile id must be a valid UUID"
+    )
+    @JsonAlias({"ho_so_nhan_vien_id", "employee_profile_id"})
+    @Schema(example = "44444444-4444-4444-4444-444444444441")
+    private String hoSoNhanVienId;
 
     @Size(max = 50, message = "Position code must be at most 50 characters")
     @JsonAlias({"position_code", "ma_chuc_vu"})

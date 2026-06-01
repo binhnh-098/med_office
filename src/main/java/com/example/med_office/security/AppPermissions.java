@@ -58,7 +58,7 @@ public final class AppPermissions {
         LinkedHashSet<String> modules = new LinkedHashSet<>();
         String normalizedRole = AppRoles.normalizeRoleCode(role);
 
-        if (AppRoles.GIAM_DOC.equals(normalizedRole)) {
+        if (AppRoles.ADMIN.equals(normalizedRole) || AppRoles.GIAM_DOC.equals(normalizedRole)) {
             modules.addAll(List.of(
                     AppModules.DASHBOARD,
                     AppModules.HO_SO_NHAN_VIEN,
@@ -72,7 +72,7 @@ public final class AppPermissions {
             return List.copyOf(modules);
         }
 
-        if (AppRoles.TRUONG_KHOA.equals(normalizedRole)) {
+        if (AppRoles.NHAN_SU.equals(normalizedRole) || AppRoles.TRUONG_KHOA.equals(normalizedRole)) {
             modules.addAll(List.of(
                     AppModules.DASHBOARD,
                     AppModules.HO_SO_NHAN_VIEN,
@@ -105,14 +105,18 @@ public final class AppPermissions {
             return List.copyOf(modules);
         }
 
-        if (AppRoles.LE_TAN.equals(normalizedRole)) {
+        if (AppRoles.VAN_THU.equals(normalizedRole) || AppRoles.LE_TAN.equals(normalizedRole)) {
             modules.addAll(List.of(
                     AppModules.DASHBOARD,
-                    AppModules.HO_SO_NHAN_VIEN,
-                    AppModules.CHUYEN_KHOA,
-                    AppModules.CONG_VAN,
-                    AppModules.DOCTOR_MEALS,
-                    AppModules.ROWBOAT
+                    AppModules.CONG_VAN
+            ));
+            return List.copyOf(modules);
+        }
+
+        if (AppRoles.DINH_DUONG.equals(normalizedRole)) {
+            modules.addAll(List.of(
+                    AppModules.DASHBOARD,
+                    AppModules.DOCTOR_MEALS
             ));
             return List.copyOf(modules);
         }

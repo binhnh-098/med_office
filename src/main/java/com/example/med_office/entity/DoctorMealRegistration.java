@@ -21,53 +21,53 @@ import jakarta.persistence.Table;
 @Getter
 @Setter
 @Entity
-@Table(name = "doctor_meal_registrations")
+@Table(name = "dang_ky_bua_an_bac_si")
 public class DoctorMealRegistration {
 
     @Id
     @Column(name = "id", length = 36)
     private String id;
 
-    @Column(name = "week_year", nullable = false)
+    @Column(name = "nam_tuan", nullable = false)
     private Integer weekYear;
 
-    @Column(name = "week_number", nullable = false)
+    @Column(name = "so_tuan", nullable = false)
     private Integer weekNumber;
 
-    @Column(name = "week_label", length = 64)
+    @Column(name = "nhan_tuan", length = 64)
     private String weekLabel;
 
-    @Column(name = "week_start_date")
+    @Column(name = "ngay_bat_dau_tuan")
     private LocalDate weekStartDate;
 
-    @Column(name = "week_end_date")
+    @Column(name = "ngay_ket_thuc_tuan")
     private LocalDate weekEndDate;
 
-    @Column(name = "username", nullable = false, length = 128)
+    @Column(name = "ten_dang_nhap", nullable = false, length = 128)
     private String username;
 
-    @Column(name = "requester_username", length = 128)
+    @Column(name = "ten_dang_nhap_nguoi_dang_ky", length = 128)
     private String requesterUsername;
 
-    @Column(name = "requester_full_name", length = 255)
+    @Column(name = "ho_ten_nguoi_dang_ky", length = 255)
     private String requesterFullName;
 
-    @Column(name = "requester_department", length = 255)
+    @Column(name = "phong_ban_nguoi_dang_ky", length = 255)
     private String requesterDepartment;
 
-    @Column(name = "requester_role", length = 128)
+    @Column(name = "vai_tro_nguoi_dang_ky", length = 128)
     private String requesterRole;
 
-    @Column(name = "total_quantity")
+    @Column(name = "tong_so_luong")
     private Integer totalQuantity = 0;
 
-    @Column(name = "total_amount", precision = 12, scale = 2)
+    @Column(name = "tong_tien", precision = 12, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(name = "payload_json", nullable = false, columnDefinition = "LONGTEXT")
+    @Column(name = "du_lieu_json", nullable = false, columnDefinition = "LONGTEXT")
     private String payloadJson;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "ngay_tao", nullable = false)
     private Instant createdAt;
 
     @OneToMany(mappedBy = "registration", cascade = CascadeType.ALL, orphanRemoval = true)

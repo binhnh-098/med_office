@@ -39,7 +39,7 @@ public class CongVanDen {
     @Column(name = "don_vi_gui", length = 255)
     private String donViGui;
 
-    @Column(name = "don_vi_gui_id")
+    @Column(name = "don_vi_gui_id", length = 36)
     private String donViGuiId;
 
     @Column(name = "nguoi_ky", length = 255)
@@ -57,10 +57,10 @@ public class CongVanDen {
     @Column(name = "muc_do_mat", length = 50)
     private String mucDoMat;
 
-    @Column(name = "phong_ban_xu_ly_id")
+    @Column(name = "phong_ban_xu_ly_id", length = 36)
     private String phongBanXuLyId;
 
-    @Column(name = "nguoi_xu_ly_id")
+    @Column(name = "nguoi_xu_ly_id", length = 36)
     private String nguoiXuLyId;
 
     @Column(name = "nguon_nhan", length = 100)
@@ -72,13 +72,13 @@ public class CongVanDen {
     @Column(name = "do_khan_xu_ly", length = 50)
     private String doKhanXuLy;
 
-    @Column(name = "loai_van_ban_id")
+    @Column(name = "loai_van_ban_id", length = 36)
     private String loaiVanBanId;
 
-    @Column(name = "linh_vuc_id")
+    @Column(name = "linh_vuc_id", length = 36)
     private String linhVucId;
 
-    @Column(name = "ho_so_id")
+    @Column(name = "ho_so_id", length = 36)
     private String hoSoId;
 
     @Column(name = "so_trang")
@@ -114,13 +114,13 @@ public class CongVanDen {
     @Column(name = "da_xu_ly")
     private Boolean daXuLy;
 
-    @Column(name = "is_deleted")
+    @Column(name = "da_xoa")
     private Boolean isDeleted;
 
-    @Column(name = "nguoi_tao_id")
+    @Column(name = "nguoi_tao_id", length = 36)
     private String nguoiTaoId;
 
-    @Column(name = "nguoi_cap_nhat_id")
+    @Column(name = "nguoi_cap_nhat_id", length = 36)
     private String nguoiCapNhatId;
 
     @PrePersist

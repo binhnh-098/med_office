@@ -17,7 +17,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "doctor_meal_registration_item_snapshots")
+@Table(name = "mon_an_trong_dang_ky_bua_an_bac_si")
 public class DoctorMealRegistrationItemSnapshot {
 
     @Id
@@ -25,22 +25,22 @@ public class DoctorMealRegistrationItemSnapshot {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "registration_item_id", nullable = false)
+    @JoinColumn(name = "chi_tiet_dang_ky_id", nullable = false)
     private DoctorMealRegistrationItem registrationItem;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "ten_mon_an", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "serving_time", length = 32)
+    @Column(name = "gio_phuc_vu", length = 32)
     private String servingTime;
 
-    @Column(name = "quantity", nullable = false)
+    @Column(name = "so_luong", nullable = false)
     private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+    @Column(name = "don_gia", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "line_total", nullable = false, precision = 12, scale = 2)
+    @Column(name = "thanh_tien", nullable = false, precision = 12, scale = 2)
     private BigDecimal lineTotal;
 
     @PrePersist

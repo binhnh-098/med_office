@@ -15,7 +15,8 @@ public interface HoSoNhanVienService {
             Boolean active,
             Integer gender,
             Boolean onlineBooking,
-            String nguoiDungId
+            String nguoiDungId,
+            Boolean hasNguoiDungId
     );
 
     HoSoNhanVienResponse findById(String id);

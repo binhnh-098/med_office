@@ -18,13 +18,16 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
     private final NguoiDungRepository nguoiDungRepository;
     private final ChucVuRepository chucVuRepository;
+    private final AccessControlService accessControlService;
 
     public DatabaseUserDetailsService(
             NguoiDungRepository nguoiDungRepository,
-            ChucVuRepository chucVuRepository
+            ChucVuRepository chucVuRepository,
+            AccessControlService accessControlService
     ) {
         this.nguoiDungRepository = nguoiDungRepository;
         this.chucVuRepository = chucVuRepository;
+        this.accessControlService = accessControlService;
     }
 
     @Override
@@ -37,16 +40,19 @@ public class DatabaseUserDetailsService implements UserDetailsService {
                         .map(chucVu -> AppRoles.normalizeRoleCode(chucVu.getMaChucVu()))
                         .orElse(AppRoles.USER);
 
+        var roles = accessControlService.resolveRolesForUser(nguoiDung.getId(), positionRole);
+        var permissions = accessControlService.getPermissionCodesForRoles(roles);
+
         return User.withUsername(nguoiDung.getTenDangNhap())
                 .password(nguoiDung.getMatKhauMaHoa())
-                .authorities(authoritiesFor(positionRole))
+                .authorities(authoritiesFor(roles.stream().map(role -> role.getCode()).toList(), permissions))
                 .build();
     }
 
-    private Set<SimpleGrantedAuthority> authoritiesFor(String positionRole) {
+    private Set<SimpleGrantedAuthority> authoritiesFor(Iterable<String> roles, Iterable<String> permissions) {
         Set<SimpleGrantedAuthority> authorities = new LinkedHashSet<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + AppRoles.USER));
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + positionRole));
+        roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + AppRoles.normalizeRoleCode(role))));
+        permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
         return authorities;
     }
 }

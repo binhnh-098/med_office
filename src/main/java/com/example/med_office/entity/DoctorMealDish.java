@@ -17,53 +17,53 @@ import jakarta.persistence.Table;
 @Getter
 @Setter
 @Entity
-@Table(name = "doctor_meal_dishes")
+@Table(name = "mon_an_bac_si")
 public class DoctorMealDish {
 
     @Id
     @Column(name = "id", length = 36)
     private String id;
 
-    @Column(name = "week_year", nullable = false)
+    @Column(name = "nam_tuan", nullable = false)
     private Integer weekYear;
 
-    @Column(name = "week_number", nullable = false)
+    @Column(name = "so_tuan", nullable = false)
     private Integer weekNumber;
 
-    @Column(name = "day_of_week", nullable = false, length = 32)
+    @Column(name = "thu_trong_tuan", nullable = false, length = 32)
     private String dayOfWeek;
 
-    @Column(name = "meal_date", nullable = false)
+    @Column(name = "ngay_an", nullable = false)
     private LocalDate date;
 
-    @Column(name = "meal_id", nullable = false, length = 32)
+    @Column(name = "ma_bua_an", nullable = false, length = 32)
     private String mealId;
 
-    @Column(name = "meal_label", nullable = false, length = 32)
+    @Column(name = "ten_bua_an", nullable = false, length = 32)
     private String mealLabel;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "ten_mon_an", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "price", nullable = false, precision = 12, scale = 2)
+    @Column(name = "gia", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+    @Column(name = "don_gia", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "calories")
+    @Column(name = "calo")
     private Integer calories;
 
-    @Column(name = "serving_time", length = 32)
+    @Column(name = "gio_phuc_vu", length = 32)
     private String servingTime;
 
-    @Column(name = "note", length = 1000)
+    @Column(name = "ghi_chu", length = 1000)
     private String note;
 
-    @Column(name = "created_by", nullable = false, length = 128)
+    @Column(name = "nguoi_tao", nullable = false, length = 128)
     private String createdBy;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "ngay_tao", nullable = false)
     private Instant createdAt;
 
     @PrePersist

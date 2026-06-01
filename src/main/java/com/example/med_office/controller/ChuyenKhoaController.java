@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -36,12 +35,19 @@ public class ChuyenKhoaController {
 
     @Operation(summary = "Lay danh sach chuyen khoa")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<List<ChuyenKhoaResponse>>> findAll(
-            @RequestParam(required = false) String userId
-    ) {
+    public ResponseEntity<ApiResponse<List<ChuyenKhoaResponse>>> findAll() {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach chuyen khoa thanh cong",
-                chuyenKhoaService.findAll(userId)
+                chuyenKhoaService.findAll()
+        ));
+    }
+
+    @Operation(summary = "Lay danh sach chuyen khoa theo nguoi dung")
+    @GetMapping(path = "/nguoi-dung/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<List<ChuyenKhoaResponse>>> findByUserId(@PathVariable String userId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lay danh sach chuyen khoa theo nguoi dung thanh cong",
+                chuyenKhoaService.findByUserId(userId)
         ));
     }
 
