@@ -161,6 +161,7 @@ Requires role `GIAM_DOC`.
 ```text
 GET /api/nguoi-dung
 PUT /api/nguoi-dung/{id}/chuc-vu
+PUT /api/nguoi-dung/{id}/status
 ```
 
 Example role update:
@@ -172,6 +173,14 @@ Example role update:
 ```
 
 Available sample role codes are `GIAM_DOC`, `TRUONG_KHOA`, `BAC_SI`, `DIEU_DUONG`, and `LE_TAN`.
+
+Lock or unlock an account and its linked employee profile:
+
+```json
+{
+  "active": false
+}
+```
 
 ## Module Permissions
 

@@ -127,6 +127,11 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
     @Transactional
     public HoSoNhanVienResponse update(String id, HoSoNhanVienRequest request) {
         HoSoNhanVien hoSoNhanVien = findHoSoNhanVien(id);
+        if (isActiveOnlyUpdate(request)) {
+            hoSoNhanVien.setActive(request.active());
+            syncLinkedUserStatus(hoSoNhanVien);
+            return toResponse(hoSoNhanVienRepository.save(hoSoNhanVien));
+        }
         String code = trim(request.code());
         validateRequiredFields(code, trim(request.name()));
         validateLockedRange(request.lockedFrom(), request.lockedTo());
@@ -136,6 +141,9 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         }
 
         applyRequest(hoSoNhanVien, request);
+        if (request.active() != null) {
+            syncLinkedUserStatus(hoSoNhanVien);
+        }
         return toResponse(hoSoNhanVienRepository.save(hoSoNhanVien));
     }
 
@@ -338,8 +346,50 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         hoSoNhanVien.setPrescriptionAccount(trim(request.prescriptionAccount()));
         hoSoNhanVien.setPrescriptionPassword(trim(request.prescriptionPassword()));
         hoSoNhanVien.setOnlineBooking(Objects.requireNonNullElse(request.onlineBooking(), false));
-        hoSoNhanVien.setActive(Objects.requireNonNullElse(request.active(), true));
+        hoSoNhanVien.setActive(Objects.requireNonNullElse(request.active(), Objects.requireNonNullElse(hoSoNhanVien.getActive(), true)));
         hoSoNhanVien.setNote(trim(request.note()));
+    }
+
+    private boolean isActiveOnlyUpdate(HoSoNhanVienRequest request) {
+        return request.active() != null
+                && request.nguoiDungId() == null
+                && request.code() == null
+                && request.name() == null
+                && request.birthDate() == null
+                && request.gender() == null
+                && request.identityNumber() == null
+                && request.socialInsurance() == null
+                && request.email() == null
+                && request.phone() == null
+                && request.degree() == null
+                && request.specialty() == null
+                && request.academicTitle() == null
+                && request.academicTitleName() == null
+                && request.certificate() == null
+                && request.position() == null
+                && request.honorTitle() == null
+                && request.signingPin() == null
+                && request.signingAccount() == null
+                && request.signingOtp() == null
+                && request.invoicePassword() == null
+                && request.avatarImage() == null
+                && request.signatureImage() == null
+                && request.lockedFrom() == null
+                && request.lockedTo() == null
+                && request.prescriptionAccount() == null
+                && request.prescriptionPassword() == null
+                && request.onlineBooking() == null
+                && request.note() == null;
+    }
+
+    private void syncLinkedUserStatus(HoSoNhanVien hoSoNhanVien) {
+        if (hoSoNhanVien.getNguoiDungId() == null || hoSoNhanVien.getNguoiDungId().isBlank()) {
+            return;
+        }
+        nguoiDungRepository.findById(hoSoNhanVien.getNguoiDungId()).ifPresent(nguoiDung -> {
+            nguoiDung.setTrangThai(Boolean.FALSE.equals(hoSoNhanVien.getActive()) ? "LOCKED" : "ACTIVE");
+            nguoiDungRepository.save(nguoiDung);
+        });
     }
 
     private HoSoNhanVienResponse toResponse(HoSoNhanVien hoSoNhanVien) {

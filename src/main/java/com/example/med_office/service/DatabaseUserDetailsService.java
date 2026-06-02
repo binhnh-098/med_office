@@ -32,8 +32,9 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        var nguoiDung = nguoiDungRepository.findByTenDangNhapAndTrangThaiIgnoreCase(username, "ACTIVE")
+        var nguoiDung = nguoiDungRepository.findByTenDangNhap(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        boolean isActive = "ACTIVE".equalsIgnoreCase(nguoiDung.getTrangThai());
         String positionRole = nguoiDung.getChucVuId() == null || nguoiDung.getChucVuId().isBlank()
                 ? AppRoles.USER
                 : chucVuRepository.findById(nguoiDung.getChucVuId())
@@ -45,6 +46,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
         return User.withUsername(nguoiDung.getTenDangNhap())
                 .password(nguoiDung.getMatKhauMaHoa())
+                .disabled(!isActive)
                 .authorities(authoritiesFor(roles.stream().map(role -> role.getCode()).toList(), permissions))
                 .build();
     }

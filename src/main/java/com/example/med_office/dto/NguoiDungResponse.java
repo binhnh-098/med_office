@@ -29,6 +29,7 @@ public record NguoiDungResponse(
         List<String> roles,
         List<String> modules,
         String status,
-        LocalDateTime lastLoginAt
+        LocalDateTime lastLoginAt,
+        LocalDateTime createdAt
 ) {
 }

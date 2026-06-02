@@ -64,6 +64,7 @@ public class AuthApiController {
         Authentication authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(request.getUsername(), request.getPassword())
         );
+        LoginResponse loginResponse = authService.getLoginResponse(authentication.getName());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
@@ -72,7 +73,7 @@ public class AuthApiController {
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Login successful",
-                authService.getLoginResponse(authentication.getName())
+                loginResponse
         ));
     }
 

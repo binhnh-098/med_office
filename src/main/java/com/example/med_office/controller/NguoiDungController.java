@@ -3,6 +3,7 @@ package com.example.med_office.controller;
 import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.NguoiDungResponse;
 import com.example.med_office.dto.NguoiDungRoleUpdateRequest;
+import com.example.med_office.dto.NguoiDungStatusUpdateRequest;
 import com.example.med_office.service.NguoiDungService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,5 +43,14 @@ public class NguoiDungController {
             @Valid @RequestBody NguoiDungRoleUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("Cap nhat phan quyen thanh cong", nguoiDungService.updateUserRole(id, request)));
+    }
+
+    @Operation(summary = "Khoa hoac mo khoa tai khoan")
+    @PutMapping(path = "/{id}/status", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<NguoiDungResponse>> updateUserStatus(
+            @PathVariable String id,
+            @Valid @RequestBody NguoiDungStatusUpdateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Cap nhat trang thai tai khoan thanh cong", nguoiDungService.updateUserStatus(id, request)));
     }
 }

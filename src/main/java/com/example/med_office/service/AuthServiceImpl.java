@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -52,6 +53,9 @@ public class AuthServiceImpl implements AuthService {
         NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhapAndTrangThaiIgnoreCase(username, "ACTIVE")
                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
         HoSoNhanVien hoSoNhanVien = hoSoNhanVienRepository.findByNguoiDungId(nguoiDung.getId()).orElse(null);
+        if (hoSoNhanVien != null && Boolean.FALSE.equals(hoSoNhanVien.getActive())) {
+            throw new ResponseStatusException(FORBIDDEN, "Tài khoản đã bị khóa.");
+        }
 
         String positionName = null;
         String positionRole = AppRoles.USER;
@@ -111,6 +115,7 @@ public class AuthServiceImpl implements AuthService {
         nguoiDung.setTrangThai("ACTIVE");
 
         NguoiDung savedUser = nguoiDungRepository.save(nguoiDung);
+        hoSoNhanVien.setActive(true);
         hoSoNhanVien.setNguoiDungId(savedUser.getId());
         try {
             hoSoNhanVienRepository.saveAndFlush(hoSoNhanVien);

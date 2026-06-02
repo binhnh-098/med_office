@@ -2,6 +2,7 @@ package com.example.med_office.service;
 
 import com.example.med_office.dto.NguoiDungResponse;
 import com.example.med_office.dto.NguoiDungRoleUpdateRequest;
+import com.example.med_office.dto.NguoiDungStatusUpdateRequest;
 import com.example.med_office.entity.ChucVu;
 import com.example.med_office.entity.HoSoNhanVien;
 import com.example.med_office.entity.NguoiDung;
@@ -20,12 +21,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class NguoiDungServiceImpl implements NguoiDungService {
@@ -52,7 +53,9 @@ public class NguoiDungServiceImpl implements NguoiDungService {
 
     @Override
     public List<NguoiDungResponse> getUsers() {
-        List<NguoiDung> nguoiDungs = nguoiDungRepository.findAll();
+        List<NguoiDung> nguoiDungs = nguoiDungRepository.findAll(
+                Sort.by(Sort.Direction.DESC, "ngayTao", "id")
+        );
         if (nguoiDungs.isEmpty()) {
             return List.of();
         }
@@ -68,7 +71,6 @@ public class NguoiDungServiceImpl implements NguoiDungService {
                 ));
 
         return nguoiDungs.stream()
-                .sorted(Comparator.comparing(NguoiDung::getTenDangNhap, String.CASE_INSENSITIVE_ORDER))
                 .map(nguoiDung -> toResponse(nguoiDung, hoSoByNguoiDungId.get(nguoiDung.getId())))
                 .toList();
     }
@@ -86,6 +88,23 @@ public class NguoiDungServiceImpl implements NguoiDungService {
             replaceUserRoles(savedNguoiDung.getId(), request.getRoleCodes());
         }
         HoSoNhanVien hoSoNhanVien = hoSoNhanVienRepository.findByNguoiDungId(savedNguoiDung.getId()).orElse(null);
+        return toResponse(savedNguoiDung, hoSoNhanVien);
+    }
+
+    @Override
+    @Transactional
+    public NguoiDungResponse updateUserStatus(String id, NguoiDungStatusUpdateRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User does not exist"));
+        boolean isActive = request.active();
+        nguoiDung.setTrangThai(isActive ? "ACTIVE" : "LOCKED");
+        NguoiDung savedNguoiDung = nguoiDungRepository.save(nguoiDung);
+
+        HoSoNhanVien hoSoNhanVien = hoSoNhanVienRepository.findByNguoiDungId(id).orElse(null);
+        if (hoSoNhanVien != null) {
+            hoSoNhanVien.setActive(isActive);
+            hoSoNhanVienRepository.save(hoSoNhanVien);
+        }
         return toResponse(savedNguoiDung, hoSoNhanVien);
     }
 
@@ -131,9 +150,16 @@ public class NguoiDungServiceImpl implements NguoiDungService {
                 chucVu == null ? null : chucVu.getTenChucVu(),
                 roleList,
                 AppPermissions.modulesForRoles(roleList),
-                nguoiDung.getTrangThai(),
-                nguoiDung.getLanDangNhapCuoi()
+                resolveStatus(nguoiDung, hoSoNhanVien),
+                nguoiDung.getLanDangNhapCuoi(),
+                nguoiDung.getNgayTao()
         );
+    }
+
+    private String resolveStatus(NguoiDung nguoiDung, HoSoNhanVien hoSoNhanVien) {
+        return hoSoNhanVien != null && Boolean.FALSE.equals(hoSoNhanVien.getActive())
+                ? "LOCKED"
+                : nguoiDung.getTrangThai();
     }
 
     private List<String> roleCodesForUser(NguoiDung nguoiDung, ChucVu chucVu) {

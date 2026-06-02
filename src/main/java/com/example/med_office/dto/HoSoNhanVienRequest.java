@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Schema(name = "HoSoNhanVienRequest")
@@ -18,12 +17,10 @@ public record HoSoNhanVienRequest(
         @JsonAlias({"nguoi_dung_id", "user_id"})
         String nguoiDungId,
 
-        @NotBlank
         @Size(max = 50, message = "Code must not exceed 50 characters")
         @JsonAlias({"ho_so_nhan_vien_code", "ma_nhan_vien"})
         String code,
 
-        @NotBlank
         @Size(max = 255, message = "Name must not exceed 255 characters")
         @JsonAlias({"ho_so_nhan_vien_name", "ho_ten"})
         String name,

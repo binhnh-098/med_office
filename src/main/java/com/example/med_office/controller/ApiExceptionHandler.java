@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -63,6 +64,13 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(ApiCode.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(ApiCode.UNAUTHORIZED, "Invalid username or password"));
+    }
+
+    @ExceptionHandler(AccountStatusException.class)
+    public ResponseEntity<ApiResponse<Object>> handleLockedAccount(AccountStatusException ex) {
+        return ResponseEntity.status(403)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(403, "Tài khoản đã bị khóa."));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
