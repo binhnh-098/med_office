@@ -10,6 +10,8 @@ USE med_office;
 START TRANSACTION;
 
 DELETE FROM user_roles;
+DELETE FROM warehouse_managers;
+DELETE FROM warehouses;
 DELETE FROM mon_an_trong_dang_ky_bua_an_bac_si;
 DELETE FROM chi_tiet_dang_ky_bua_an_bac_si;
 DELETE FROM dang_ky_bua_an_bac_si;

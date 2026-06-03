@@ -1,0 +1,12 @@
+package com.example.med_office.dto;
+
+import java.util.List;
+
+public record WarehousePageResponse(
+        List<WarehouseResponse> content,
+        int page,
+        int size,
+        long totalElements,
+        int totalPages
+) {
+}

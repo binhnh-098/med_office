@@ -1,0 +1,9 @@
+package com.example.med_office.dto;
+
+public record WarehouseManagerResponse(
+        String id,
+        String code,
+        String name,
+        String phone
+) {
+}

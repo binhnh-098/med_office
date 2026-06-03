@@ -182,6 +182,27 @@ Lock or unlock an account and its linked employee profile:
 }
 ```
 
+### Manage Warehouses
+
+Apply the warehouse migration once before deploying the module:
+
+```text
+src/main/resources/migrate-warehouses.sql
+```
+
+Requires `warehouse.view` for read operations and `warehouse.manage` for write operations.
+
+```text
+GET  /api/kho?keyword=&status=&page=0&size=10&sort=createdAt,desc
+GET  /api/kho/{id}
+POST /api/kho
+PUT  /api/kho/{id}
+PUT  /api/kho/{id}/status
+GET  /api/kho/hierarchy
+PUT  /api/kho/hierarchy
+GET  /api/kho/summary
+```
+
 ## Module Permissions
 
 Backend API access is enforced by role:

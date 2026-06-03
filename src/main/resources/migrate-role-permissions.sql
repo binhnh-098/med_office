@@ -98,7 +98,9 @@ INSERT INTO permissions (id, code, module_code, module_name, name, description, 
 ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb028', 'meals.weekly-menu.update', 'meals', 'Module suat an', 'Cap nhat thuc don tuan', 'Cap nhat thuc don tuan', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb029', 'system.permissions.manage', 'system', 'He thong', 'Quan ly phan quyen', 'Quan ly phan quyen', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb030', 'system.accounts.view', 'system', 'He thong', 'Xem tai khoan', 'Xem tai khoan', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb031', 'system.accounts.update', 'system', 'He thong', 'Cap nhat tai khoan', 'Cap nhat tai khoan', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb031', 'system.accounts.update', 'system', 'He thong', 'Cap nhat tai khoan', 'Cap nhat tai khoan', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb032', 'warehouse.view', 'warehouse', 'Module kho', 'Xem kho', 'Xem danh sach, chi tiet, phan cap va thong ke kho', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb033', 'warehouse.manage', 'warehouse', 'Module kho', 'Quan ly kho', 'Tao, sua, khoa mo va cau hinh phan cap kho', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON DUPLICATE KEY UPDATE
     module_code = VALUES(module_code),
     module_name = VALUES(module_name),
