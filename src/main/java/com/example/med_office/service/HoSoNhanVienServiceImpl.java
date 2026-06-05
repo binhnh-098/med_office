@@ -1,6 +1,8 @@
 package com.example.med_office.service;
 
+import com.example.med_office.dto.DirectManagerInfoResponse;
 import com.example.med_office.dto.HoSoNhanVienRequest;
+import com.example.med_office.dto.HoSoNhanVienOptionResponse;
 import com.example.med_office.dto.HoSoNhanVienResponse;
 import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
@@ -19,6 +21,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -26,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.Normalizer;
@@ -44,6 +49,7 @@ import java.util.stream.Stream;
 
 @Service
 public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
+    private static final Logger log = LoggerFactory.getLogger(HoSoNhanVienServiceImpl.class);
 
     private final HoSoNhanVienRepository hoSoNhanVienRepository;
     private final NguoiDungRepository nguoiDungRepository;
@@ -85,10 +91,17 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"))
         );
 
-        List<HoSoNhanVienResponse> items = result.getContent()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        Map<String, DirectManagerSummary> directManagersById = loadDirectManagers(result.getContent());
+        List<HoSoNhanVienResponse> items = new ArrayList<>();
+        for (HoSoNhanVien hoSoNhanVien : result.getContent()) {
+            try {
+                items.add(safeToResponse(hoSoNhanVien, directManagersById));
+            } catch (Throwable ex) {
+                log.warn("Khong the map ho so nhan vien {} trong danh sach, fallback sang response toi thieu",
+                        hoSoNhanVien == null ? null : hoSoNhanVien.getId(), ex);
+                items.add(fallbackResponse(hoSoNhanVien, directManagersById));
+            }
+        }
 
         return new PagedResponse<>(
                 items,
@@ -104,7 +117,8 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
     @Override
     @Transactional(readOnly = true)
     public HoSoNhanVienResponse findById(String id) {
-        return toResponse(findHoSoNhanVien(id));
+        HoSoNhanVien hoSoNhanVien = findHoSoNhanVien(id);
+        return safeToResponse(hoSoNhanVien, loadDirectManagers(List.of(hoSoNhanVien)));
     }
 
     @Override
@@ -114,13 +128,15 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         validateRequiredFields(code, trim(request.name()));
         validateLockedRange(request.lockedFrom(), request.lockedTo());
         validateNguoiDungLink(request.nguoiDungId(), null);
+        validateDirectManager(request.directManagerId(), null);
         if (hoSoNhanVienRepository.existsByCodeIgnoreCase(code)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma ho so nhan vien da ton tai");
         }
 
         HoSoNhanVien hoSoNhanVien = new HoSoNhanVien();
         applyRequest(hoSoNhanVien, request);
-        return toResponse(hoSoNhanVienRepository.save(hoSoNhanVien));
+        HoSoNhanVien saved = hoSoNhanVienRepository.save(hoSoNhanVien);
+        return safeToResponse(saved, loadDirectManagers(List.of(saved)));
     }
 
     @Override
@@ -130,12 +146,14 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         if (isActiveOnlyUpdate(request)) {
             hoSoNhanVien.setActive(request.active());
             syncLinkedUserStatus(hoSoNhanVien);
-            return toResponse(hoSoNhanVienRepository.save(hoSoNhanVien));
+            HoSoNhanVien saved = hoSoNhanVienRepository.save(hoSoNhanVien);
+            return safeToResponse(saved, loadDirectManagers(List.of(saved)));
         }
         String code = trim(request.code());
         validateRequiredFields(code, trim(request.name()));
         validateLockedRange(request.lockedFrom(), request.lockedTo());
         validateNguoiDungLink(request.nguoiDungId(), id);
+        validateDirectManager(request.directManagerId(), id);
         if (hoSoNhanVienRepository.existsByCodeIgnoreCaseAndIdNot(code, id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma ho so nhan vien da ton tai");
         }
@@ -144,7 +162,8 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         if (request.active() != null) {
             syncLinkedUserStatus(hoSoNhanVien);
         }
-        return toResponse(hoSoNhanVienRepository.save(hoSoNhanVien));
+        HoSoNhanVien saved = hoSoNhanVienRepository.save(hoSoNhanVien);
+        return safeToResponse(saved, loadDirectManagers(List.of(saved)));
     }
 
     @Override
@@ -158,6 +177,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
     @Transactional(readOnly = true)
     public String exportCsv() {
         List<HoSoNhanVien> hoSoNhanVienList = hoSoNhanVienRepository.findAll(Sort.by(Sort.Direction.ASC, "code", "id"));
+        Map<String, DirectManagerSummary> directManagersById = loadDirectManagers(hoSoNhanVienList);
         String header = String.join(",", List.of(
                 "id",
                 "nguoiDungId",
@@ -177,6 +197,9 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 "certificate",
                 "position",
                 "positionName",
+                "directManagerId",
+                "directManagerCode",
+                "directManagerName",
                 "honorTitle",
                 "signingPin",
                 "signingAccount",
@@ -194,7 +217,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         ));
 
         String rows = hoSoNhanVienList.stream()
-                .map(this::toCsvRow)
+                .map(hoSoNhanVien -> toCsvRow(hoSoNhanVien, directManagersById))
                 .collect(Collectors.joining("\n"));
 
         return "\uFEFF" + header + (rows.isBlank() ? "" : "\n" + rows);
@@ -238,6 +261,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
 
                 try {
                     applyExcelRow(hoSoNhanVien, row, headers, code, name);
+                    validateDirectManager(hoSoNhanVien.getDirectManagerId(), hoSoNhanVien.getId());
                 } catch (RuntimeException ex) {
                     throw new ResponseStatusException(
                             HttpStatus.BAD_REQUEST,
@@ -260,6 +284,17 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File Excel khong dung mau hoac khong the import");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HoSoNhanVienOptionResponse> getDirectManagerOptions(String keyword, String excludeId) {
+        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
+        String normalizedExcludeId = excludeId == null || excludeId.isBlank() ? null : excludeId.trim();
+        Pageable pageable = PageRequest.of(0, 20);
+        return hoSoNhanVienRepository.findDirectManagerOptions(normalizedKeyword, normalizedExcludeId, pageable).stream()
+                .map(this::toOptionResponse)
+                .toList();
     }
 
     private HoSoNhanVien findHoSoNhanVien(String id) {
@@ -334,6 +369,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         hoSoNhanVien.setAcademicTitleName(trim(request.academicTitleName()));
         hoSoNhanVien.setCertificate(trim(request.certificate()));
         hoSoNhanVien.setPosition(trim(request.position()));
+        hoSoNhanVien.setDirectManagerId(trim(request.directManagerId()));
         hoSoNhanVien.setHonorTitle(trim(request.honorTitle()));
         hoSoNhanVien.setSigningPin(trim(request.signingPin()));
         hoSoNhanVien.setSigningAccount(trim(request.signingAccount()));
@@ -367,6 +403,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 && request.academicTitleName() == null
                 && request.certificate() == null
                 && request.position() == null
+                && request.directManagerId() == null
                 && request.honorTitle() == null
                 && request.signingPin() == null
                 && request.signingAccount() == null
@@ -392,7 +429,13 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         });
     }
 
-    private HoSoNhanVienResponse toResponse(HoSoNhanVien hoSoNhanVien) {
+    private HoSoNhanVienResponse toResponse(HoSoNhanVien hoSoNhanVien, Map<String, DirectManagerSummary> directManagersById) {
+        DirectManagerSummary directManager = getDirectManagerSummary(directManagersById, hoSoNhanVien == null ? null : hoSoNhanVien.getDirectManagerId());
+        String specialtyName = safeResolveSpecialtyName(hoSoNhanVien.getSpecialty());
+        String positionName = safeResolvePositionName(hoSoNhanVien.getPosition());
+        DirectManagerInfoResponse directManagerInfo = directManager == null
+                ? null
+                : new DirectManagerInfoResponse(hoSoNhanVien.getDirectManagerId(), directManager.code(), directManager.name());
         return new HoSoNhanVienResponse(
                 hoSoNhanVien.getId(),
                 hoSoNhanVien.getNguoiDungId(),
@@ -406,12 +449,18 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 hoSoNhanVien.getPhone(),
                 hoSoNhanVien.getDegree(),
                 hoSoNhanVien.getSpecialty(),
-                resolveSpecialtyName(hoSoNhanVien.getSpecialty()),
+                specialtyName,
                 hoSoNhanVien.getAcademicTitle(),
                 hoSoNhanVien.getAcademicTitleName(),
                 hoSoNhanVien.getCertificate(),
                 hoSoNhanVien.getPosition(),
-                resolvePositionName(hoSoNhanVien.getPosition()),
+                positionName,
+                hoSoNhanVien.getDirectManagerId(),
+                directManager == null ? null : directManager.code(),
+                directManager == null ? null : directManager.name(),
+                hoSoNhanVien.getDirectManagerId(),
+                directManager == null ? null : directManager.name(),
+                directManagerInfo,
                 hoSoNhanVien.getHonorTitle(),
                 hoSoNhanVien.getSigningPin(),
                 hoSoNhanVien.getSigningAccount(),
@@ -429,7 +478,64 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         );
     }
 
-    private String toCsvRow(HoSoNhanVien hoSoNhanVien) {
+    private HoSoNhanVienResponse safeToResponse(HoSoNhanVien hoSoNhanVien, Map<String, DirectManagerSummary> directManagersById) {
+        try {
+            return toResponse(hoSoNhanVien, directManagersById);
+        } catch (RuntimeException ex) {
+            log.warn("Khong the map ho so nhan vien {} sang response day du, fallback sang response toi thieu", hoSoNhanVien == null ? null : hoSoNhanVien.getId(), ex);
+            return fallbackResponse(hoSoNhanVien, directManagersById);
+        }
+    }
+
+    private HoSoNhanVienResponse fallbackResponse(HoSoNhanVien hoSoNhanVien, Map<String, DirectManagerSummary> directManagersById) {
+        DirectManagerSummary directManager = getDirectManagerSummary(directManagersById, hoSoNhanVien == null ? null : hoSoNhanVien.getDirectManagerId());
+        DirectManagerInfoResponse directManagerInfo = hoSoNhanVien == null || directManager == null
+                ? null
+                : new DirectManagerInfoResponse(hoSoNhanVien.getDirectManagerId(), directManager.code(), directManager.name());
+        return new HoSoNhanVienResponse(
+                hoSoNhanVien == null ? null : hoSoNhanVien.getId(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getNguoiDungId(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getCode(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getName(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getBirthDate(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getGender(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getIdentityNumber(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSocialInsurance(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getEmail(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getPhone(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getDegree(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSpecialty(),
+                null,
+                hoSoNhanVien == null ? null : hoSoNhanVien.getAcademicTitle(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getAcademicTitleName(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getCertificate(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getPosition(),
+                null,
+                hoSoNhanVien == null ? null : hoSoNhanVien.getDirectManagerId(),
+                directManager == null ? null : directManager.code(),
+                directManager == null ? null : directManager.name(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getDirectManagerId(),
+                directManager == null ? null : directManager.name(),
+                directManagerInfo,
+                hoSoNhanVien == null ? null : hoSoNhanVien.getHonorTitle(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSigningPin(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSigningAccount(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSigningOtp(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getInvoicePassword(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getAvatarImage(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getSignatureImage(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getLockedFrom(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getLockedTo(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getPrescriptionAccount(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getPrescriptionPassword(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getOnlineBooking(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getActive(),
+                hoSoNhanVien == null ? null : hoSoNhanVien.getNote()
+        );
+    }
+
+    private String toCsvRow(HoSoNhanVien hoSoNhanVien, Map<String, DirectManagerSummary> directManagersById) {
+        DirectManagerSummary directManager = getDirectManagerSummary(directManagersById, hoSoNhanVien.getDirectManagerId());
         return Stream.of(
                         hoSoNhanVien.getId(),
                         hoSoNhanVien.getNguoiDungId(),
@@ -449,6 +555,9 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                         hoSoNhanVien.getCertificate(),
                         hoSoNhanVien.getPosition(),
                         resolvePositionName(hoSoNhanVien.getPosition()),
+                        hoSoNhanVien.getDirectManagerId(),
+                        directManager == null ? null : directManager.code(),
+                        directManager == null ? null : directManager.name(),
                         hoSoNhanVien.getHonorTitle(),
                         hoSoNhanVien.getSigningPin(),
                         hoSoNhanVien.getSigningAccount(),
@@ -505,6 +614,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         hoSoNhanVien.setAcademicTitleName(cellText(row, headers, "academicTitleName", "academic_title_name", "ten_hoc_ham"));
         hoSoNhanVien.setCertificate(cellText(row, headers, "certificate", "chung_chi", "chung_chi_hanh_nghe"));
         hoSoNhanVien.setPosition(resolvePositionCode(cellText(row, headers, "position", "position_code", "ma_chuc_vu", "chuc_vu", "ten_chuc_vu", "chuc_vu_id")));
+        hoSoNhanVien.setDirectManagerId(resolveDirectManagerId(cellText(row, headers, "directManagerId", "direct_manager_id", "cap_tren_truc_tiep_id", "supervisor_id", "directManagerCode", "direct_manager_code", "ma_cap_tren_truc_tiep")));
         hoSoNhanVien.setHonorTitle(cellText(row, headers, "honorTitle", "honor_title", "danh_hieu"));
         hoSoNhanVien.setSigningPin(cellText(row, headers, "signingPin", "signing_pin"));
         hoSoNhanVien.setSigningAccount(cellText(row, headers, "signingAccount", "signing_account"));
@@ -703,6 +813,47 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
                 .orElse(null);
     }
 
+    private String safeResolveSpecialtyName(String specialtyId) {
+        try {
+            return resolveSpecialtyName(specialtyId);
+        } catch (RuntimeException ex) {
+            log.warn("Khong the resolve specialty name cho specialtyId={}", specialtyId, ex);
+            return null;
+        }
+    }
+
+    private String safeResolvePositionName(String positionCode) {
+        try {
+            return resolvePositionName(positionCode);
+        } catch (RuntimeException ex) {
+            log.warn("Khong the resolve position name cho positionCode={}", positionCode, ex);
+            return null;
+        }
+    }
+
+    private HoSoNhanVienOptionResponse toOptionResponse(HoSoNhanVien hoSoNhanVien) {
+        return new HoSoNhanVienOptionResponse(
+                hoSoNhanVien.getId(),
+                hoSoNhanVien.getId(),
+                hoSoNhanVien.getCode(),
+                hoSoNhanVien.getName(),
+                hoSoNhanVien.getPosition(),
+                resolvePositionName(hoSoNhanVien.getPosition()),
+                hoSoNhanVien.getActive()
+        );
+    }
+
+    private String resolveDirectManagerId(String value) {
+        String text = trim(value);
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        return hoSoNhanVienRepository.findById(text)
+                .map(HoSoNhanVien::getId)
+                .or(() -> hoSoNhanVienRepository.findByCodeIgnoreCase(text).map(HoSoNhanVien::getId))
+                .orElse(text);
+    }
+
     private void validateLockedRange(LocalDate lockedFrom, LocalDate lockedTo) {
         if (lockedFrom != null && lockedTo != null && lockedFrom.isAfter(lockedTo)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoang ngay khoa ho so khong hop le");
@@ -733,5 +884,54 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
         if (linked) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Nguoi dung da co ho so nhan vien");
         }
+    }
+
+    private void validateDirectManager(String directManagerId, String currentHoSoId) {
+        String normalizedId = trim(directManagerId);
+        if (normalizedId == null || normalizedId.isBlank()) {
+            return;
+        }
+        if (normalizedId.equals(currentHoSoId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cap tren truc tiep khong duoc trung voi ho so hien tai");
+        }
+        if (!hoSoNhanVienRepository.existsById(normalizedId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cap tren truc tiep khong ton tai");
+        }
+    }
+
+    private Map<String, DirectManagerSummary> loadDirectManagers(List<HoSoNhanVien> profiles) {
+        try {
+            List<String> directManagerIds = profiles.stream()
+                    .filter(Objects::nonNull)
+                    .map(HoSoNhanVien::getDirectManagerId)
+                    .filter(Objects::nonNull)
+                    .filter(id -> !id.isBlank())
+                    .distinct()
+                    .toList();
+            if (directManagerIds.isEmpty()) {
+                return Map.of();
+            }
+            return hoSoNhanVienRepository.findAllById(directManagerIds).stream()
+                    .filter(Objects::nonNull)
+                    .filter(profile -> profile.getId() != null && !profile.getId().isBlank())
+                    .collect(Collectors.toMap(
+                            HoSoNhanVien::getId,
+                            profile -> new DirectManagerSummary(profile.getCode(), profile.getName()),
+                            (left, right) -> left
+                    ));
+        } catch (RuntimeException ex) {
+            log.warn("Khong the load thong tin cap tren truc tiep, fallback tra null", ex);
+            return Map.of();
+        }
+    }
+
+    private DirectManagerSummary getDirectManagerSummary(Map<String, DirectManagerSummary> directManagersById, String directManagerId) {
+        if (directManagersById == null || directManagersById.isEmpty() || directManagerId == null || directManagerId.isBlank()) {
+            return null;
+        }
+        return directManagersById.get(directManagerId);
+    }
+
+    private record DirectManagerSummary(String code, String name) {
     }
 }

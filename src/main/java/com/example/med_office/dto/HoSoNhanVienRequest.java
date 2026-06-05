@@ -69,6 +69,9 @@ public record HoSoNhanVienRequest(
         @Size(max = 100, message = "Position must not exceed 100 characters")
         String position,
 
+        @JsonAlias({"direct_manager_id", "cap_tren_truc_tiep_id", "supervisor_id", "capTrenTrucTiepId"})
+        String directManagerId,
+
         @Size(max = 255, message = "Honor title must not exceed 255 characters")
         @JsonAlias("honor_title")
         String honorTitle,

@@ -2,6 +2,7 @@ package com.example.med_office.controller;
 
 import com.example.med_office.dto.ApiResponse;
 import com.example.med_office.dto.HoSoNhanVienRequest;
+import com.example.med_office.dto.HoSoNhanVienOptionResponse;
 import com.example.med_office.dto.HoSoNhanVienResponse;
 import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @Validated
@@ -55,6 +57,18 @@ public class HoSoNhanVienController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach ho so nhan vien thanh cong",
                 hoSoNhanVienService.findAll(page, size, keyword, active, gender, onlineBooking, nguoiDungId, hasNguoiDungId)
+        ));
+    }
+
+    @Operation(summary = "Lay danh sach option cap tren truc tiep")
+    @GetMapping(path = "/options/direct-managers", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<List<HoSoNhanVienOptionResponse>>> getDirectManagerOptions(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String excludeId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lay danh sach cap tren truc tiep thanh cong",
+                hoSoNhanVienService.getDirectManagerOptions(keyword, excludeId)
         ));
     }
 

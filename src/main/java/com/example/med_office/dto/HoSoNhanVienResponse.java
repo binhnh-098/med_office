@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "HoSoNhanVienResponse")
@@ -27,6 +28,12 @@ public record HoSoNhanVienResponse(
         String certificate,
         String position,
         String positionName,
+        String directManagerId,
+        String directManagerCode,
+        String directManagerName,
+        String capTrenTrucTiepId,
+        String capTrenTrucTiepName,
+        DirectManagerInfoResponse capTrenTrucTiep,
         String honorTitle,
         String signingPin,
         String signingAccount,

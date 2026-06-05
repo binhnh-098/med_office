@@ -13,5 +13,7 @@ public interface WarehouseManagerRepository extends JpaRepository<WarehouseManag
 
     List<WarehouseManager> findByIdWarehouseIdIn(Collection<String> warehouseIds);
 
+    List<WarehouseManager> findByIdEmployeeProfileId(String employeeProfileId);
+
     void deleteByIdWarehouseId(String warehouseId);
 }

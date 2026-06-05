@@ -108,6 +108,7 @@ INSERT INTO ho_so_nhan_vien (
     ten_hoc_ham,
     chung_chi,
     ma_chuc_vu,
+    cap_tren_truc_tiep_id,
     danh_hieu,
     ma_pin_ky,
     tai_khoan_ky,
@@ -125,11 +126,11 @@ INSERT INTO ho_so_nhan_vien (
     ngay_tao,
     ngay_cap_nhat
 ) VALUES
-('55555555-5555-5555-5555-555555555551', '22222222-2222-2222-2222-222222222221', 'NV0001', 'Nguyá»…n VÄƒn Quáº£n', '1980-02-10', 1, '079080000001', 'BHXH000001', 'admin@medoffice.local', '0901000001', 'BS.CKII', 'Ná»™i tá»•ng quÃ¡t', 'CKII', 'ChuyÃªn khoa II', '001001/BYT-CCHN', 'GIAM_DOC', 'Tháº§y thuá»‘c Æ°u tÃº', '', '', '', '', '', '', NULL, NULL, 'admin_rx', 'clinic123', b'0', b'1', 'TÃ i khoáº£n quáº£n trá»‹ máº«u', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('55555555-5555-5555-5555-555555555552', '22222222-2222-2222-2222-222222222222', 'NV0002', 'Tráº§n Thá»‹ An', '1988-06-15', 2, '079088000002', 'BHXH000002', 'doctor1@medoffice.local', '0901000002', 'ThS.BS', 'Nhi khoa', 'THS', 'Tháº¡c sÄ©', '001002/BYT-CCHN', 'BAC_SI', '', '', '', '', '', '', '', NULL, NULL, 'doctor1_rx', 'clinic123', b'1', b'1', 'BÃ¡c sÄ© khÃ¡m nhi', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('55555555-5555-5555-5555-555555555553', '22222222-2222-2222-2222-222222222223', 'NV0003', 'LÃª Minh BÃ¬nh', '1985-11-03', 1, '079085000003', 'BHXH000003', 'doctor2@medoffice.local', '0901000003', 'BS.CKI', 'Tai mÅ©i há»ng', 'CKI', 'ChuyÃªn khoa I', '001003/BYT-CCHN', 'BAC_SI', '', '', '', '', '', '', '', NULL, NULL, 'doctor2_rx', 'clinic123', b'1', b'1', 'BÃ¡c sÄ© tai mÅ©i há»ng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('55555555-5555-5555-5555-555555555554', '22222222-2222-2222-2222-222222222224', 'NV0004', 'Pháº¡m Thu CÃºc', '1992-04-22', 2, '079092000004', 'BHXH000004', 'nurse1@medoffice.local', '0901000004', 'CNÄD', 'Äiá»u dÆ°á»¡ng', '', '', '001004/BYT-CCHN', 'DIEU_DUONG', '', '', '', '', '', '', '', NULL, NULL, '', '', b'0', b'1', 'Äiá»u dÆ°á»¡ng phÃ²ng khÃ¡m', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222225', 'NV0005', 'HoÃ ng Háº£i DÆ°Æ¡ng', '1994-09-09', 1, '079094000005', 'BHXH000005', 'reception@medoffice.local', '0901000005', 'CÄ', 'HÃ nh chÃ­nh', '', '', '', 'LE_TAN', '', '', '', '', '', '', '', NULL, NULL, '', '', b'0', b'1', 'Lá»… tÃ¢n tiáº¿p nháº­n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('55555555-5555-5555-5555-555555555551', '22222222-2222-2222-2222-222222222221', 'NV0001', 'Nguyá»…n VÄƒn Quáº£n', '1980-02-10', 1, '079080000001', 'BHXH000001', 'admin@medoffice.local', '0901000001', 'BS.CKII', 'Ná»™i tá»•ng quÃ¡t', 'CKII', 'ChuyÃªn khoa II', '001001/BYT-CCHN', 'GIAM_DOC', NULL, 'Tháº§y thuá»‘c Æ°u tÃº', '', '', '', '', '', '', NULL, NULL, 'admin_rx', 'clinic123', b'0', b'1', 'TÃ i khoáº£n quáº£n trá»‹ máº«u', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('55555555-5555-5555-5555-555555555552', '22222222-2222-2222-2222-222222222222', 'NV0002', 'Tráº§n Thá»‹ An', '1988-06-15', 2, '079088000002', 'BHXH000002', 'doctor1@medoffice.local', '0901000002', 'ThS.BS', 'Nhi khoa', 'THS', 'Tháº¡c sÄ©', '001002/BYT-CCHN', 'BAC_SI', '55555555-5555-5555-5555-555555555551', '', '', '', '', '', '', '', NULL, NULL, 'doctor1_rx', 'clinic123', b'1', b'1', 'BÃ¡c sÄ© khÃ¡m nhi', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('55555555-5555-5555-5555-555555555553', '22222222-2222-2222-2222-222222222223', 'NV0003', 'LÃª Minh BÃ¬nh', '1985-11-03', 1, '079085000003', 'BHXH000003', 'doctor2@medoffice.local', '0901000003', 'BS.CKI', 'Tai mÅ©i há»ng', 'CKI', 'ChuyÃªn khoa I', '001003/BYT-CCHN', 'BAC_SI', '55555555-5555-5555-5555-555555555551', '', '', '', '', '', '', '', NULL, NULL, 'doctor2_rx', 'clinic123', b'1', b'1', 'BÃ¡c sÄ© tai mÅ©i há»ng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('55555555-5555-5555-5555-555555555554', '22222222-2222-2222-2222-222222222224', 'NV0004', 'Pháº¡m Thu CÃºc', '1992-04-22', 2, '079092000004', 'BHXH000004', 'nurse1@medoffice.local', '0901000004', 'CNÄD', 'Äiá»u dÆ°á»¡ng', '', '', '001004/BYT-CCHN', 'DIEU_DUONG', '55555555-5555-5555-5555-555555555552', '', '', '', '', '', '', '', NULL, NULL, '', '', b'0', b'1', 'Äiá»u dÆ°á»¡ng phÃ²ng khÃ¡m', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222225', 'NV0005', 'HoÃ ng Háº£i DÆ°Æ¡ng', '1994-09-09', 1, '079094000005', 'BHXH000005', 'reception@medoffice.local', '0901000005', 'CÄ', 'HÃ nh chÃ­nh', '', '', '', 'LE_TAN', '55555555-5555-5555-5555-555555555551', '', '', '', '', '', '', '', NULL, NULL, '', '', b'0', b'1', 'Lá»… tÃ¢n tiáº¿p nháº­n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO cong_van_den (
     id,

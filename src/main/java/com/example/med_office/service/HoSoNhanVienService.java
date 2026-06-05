@@ -1,10 +1,13 @@
 package com.example.med_office.service;
 
 import com.example.med_office.dto.HoSoNhanVienRequest;
+import com.example.med_office.dto.HoSoNhanVienOptionResponse;
 import com.example.med_office.dto.HoSoNhanVienResponse;
 import com.example.med_office.dto.ImportResultResponse;
 import com.example.med_office.dto.PagedResponse;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface HoSoNhanVienService {
 
@@ -30,4 +33,6 @@ public interface HoSoNhanVienService {
     String exportCsv();
 
     ImportResultResponse importExcel(MultipartFile file);
+
+    List<HoSoNhanVienOptionResponse> getDirectManagerOptions(String keyword, String excludeId);
 }

@@ -6,6 +6,8 @@ import java.util.Map;
 import com.example.med_office.dto.ApiCode;
 import com.example.med_office.dto.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Object>> handleMissingRequestBody() {
@@ -82,6 +85,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Object>> handleResponseStatusException(ResponseStatusException ex) {
+        log.warn("ResponseStatusException: status={}, reason={}", ex.getStatusCode(), ex.getReason(), ex);
         return ResponseEntity.status(ex.getStatusCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(ex.getStatusCode().value(), ex.getReason()));
@@ -89,6 +93,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler({DataIntegrityViolationException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiResponse<Object>> handleDatabaseConstraintViolation(Exception ex) {
+        log.warn("Database constraint violation", ex);
         return ResponseEntity.badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Request data violates database constraints"));
@@ -96,6 +101,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiResponse<Object>> handleDatabaseAccessException(DataAccessException ex) {
+        log.error("Database access exception", ex);
         return ResponseEntity.internalServerError()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(
@@ -107,6 +113,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleUnexpectedException(Exception ex) {
+        log.error("Unexpected exception", ex);
         return ResponseEntity.internalServerError()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error(500, "Internal server error", errorDetails(ex)));

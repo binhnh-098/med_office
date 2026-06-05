@@ -30,4 +30,22 @@ public interface HoSoNhanVienRepository extends JpaRepository<HoSoNhanVien, Stri
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select hoSoNhanVien from HoSoNhanVien hoSoNhanVien where hoSoNhanVien.id = :id")
     Optional<HoSoNhanVien> findByIdForUpdate(@Param("id") String id);
+
+    @Query("""
+            select hoSoNhanVien
+            from HoSoNhanVien hoSoNhanVien
+            where (:excludeId is null or hoSoNhanVien.id <> :excludeId)
+              and (:keyword is null
+                   or lower(hoSoNhanVien.code) like lower(concat('%', :keyword, '%'))
+                   or lower(hoSoNhanVien.name) like lower(concat('%', :keyword, '%')))
+            order by
+              case when hoSoNhanVien.active = true then 0 else 1 end,
+              hoSoNhanVien.name asc,
+              hoSoNhanVien.code asc
+            """)
+    List<HoSoNhanVien> findDirectManagerOptions(
+            @Param("keyword") String keyword,
+            @Param("excludeId") String excludeId,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

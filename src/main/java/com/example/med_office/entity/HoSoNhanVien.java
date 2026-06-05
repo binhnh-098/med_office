@@ -70,6 +70,9 @@ public class HoSoNhanVien {
     @Column(name = "ma_chuc_vu", length = 100)
     private String position;
 
+    @Column(name = "cap_tren_truc_tiep_id", length = 36)
+    private String directManagerId;
+
     @Column(name = "danh_hieu", length = 255)
     private String honorTitle;
 

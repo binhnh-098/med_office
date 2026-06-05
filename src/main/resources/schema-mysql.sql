@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
     ten_hoc_ham VARCHAR(255) NULL,
     chung_chi VARCHAR(100) NULL,
     ma_chuc_vu VARCHAR(100) NULL,
+    cap_tren_truc_tiep_id CHAR(36) NULL,
     danh_hieu VARCHAR(255) NULL,
     ma_pin_ky VARCHAR(255) NULL,
     tai_khoan_ky VARCHAR(255) NULL,
@@ -161,8 +162,12 @@ CREATE TABLE IF NOT EXISTS ho_so_nhan_vien (
     KEY idx_ho_so_nhan_vien_ten_nhan_vien (ten_nhan_vien),
     KEY idx_ho_so_nhan_vien_dang_hoat_dong (dang_hoat_dong),
     KEY idx_ho_so_nhan_vien_chuyen_khoa (chuyen_khoa),
+    KEY idx_ho_so_nhan_vien_cap_tren_truc_tiep_id (cap_tren_truc_tiep_id),
     CONSTRAINT fk_ho_so_nhan_vien_nguoi_dung
         FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung (id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_ho_so_nhan_vien_cap_tren_truc_tiep
+        FOREIGN KEY (cap_tren_truc_tiep_id) REFERENCES ho_so_nhan_vien (id)
         ON DELETE SET NULL
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
@@ -215,6 +220,64 @@ CREATE TABLE IF NOT EXISTS warehouse_managers (
         ON DELETE CASCADE,
     CONSTRAINT fk_warehouse_managers_employee
         FOREIGN KEY (employee_profile_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS warehouse_inbounds (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    code VARCHAR(50) NOT NULL,
+    receipt_date DATE NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    warehouse_id CHAR(36) NOT NULL,
+    warehouse_name VARCHAR(255) NOT NULL,
+    supplier_id CHAR(36) NULL,
+    supplier_name VARCHAR(255) NULL,
+    invoice_number VARCHAR(100) NULL,
+    source_document VARCHAR(100) NULL,
+    delivery_by VARCHAR(255) NULL,
+    received_by VARCHAR(255) NULL,
+    note VARCHAR(2000) NULL,
+    approval_note VARCHAR(2000) NULL,
+    rejection_reason VARCHAR(2000) NULL,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_warehouse_inbounds_code (code),
+    KEY idx_warehouse_inbounds_status (status),
+    KEY idx_warehouse_inbounds_receipt_date (receipt_date),
+    KEY idx_warehouse_inbounds_warehouse_id (warehouse_id),
+    KEY idx_warehouse_inbounds_supplier_id (supplier_id),
+    CONSTRAINT fk_warehouse_inbounds_warehouse
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_warehouse_inbounds_supplier
+        FOREIGN KEY (supplier_id) REFERENCES nha_cung_cap (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS warehouse_inbound_items (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    warehouse_inbound_id CHAR(36) NOT NULL,
+    item_id VARCHAR(100) NULL,
+    item_code VARCHAR(100) NULL,
+    item_name VARCHAR(255) NOT NULL,
+    unit VARCHAR(100) NULL,
+    quantity DECIMAL(18,2) NOT NULL,
+    unit_price DECIMAL(18,2) NOT NULL,
+    line_total DECIMAL(18,2) NOT NULL,
+    batch_number VARCHAR(100) NULL,
+    expiry_date DATE NULL,
+    PRIMARY KEY (id),
+    KEY idx_warehouse_inbound_items_inbound_id (warehouse_inbound_id),
+    KEY idx_warehouse_inbound_items_item_code (item_code),
+    KEY idx_warehouse_inbound_items_item_name (item_name),
+    CONSTRAINT fk_warehouse_inbound_items_inbound
+        FOREIGN KEY (warehouse_inbound_id) REFERENCES warehouse_inbounds (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
