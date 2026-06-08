@@ -6,7 +6,9 @@ public record WarehouseHierarchyItem(
         String id,
         String code,
         String name,
+        String parentWarehouseId,
         String status,
+        List<WarehouseManagerResponse> managers,
         List<WarehouseHierarchyItem> children
 ) {
 }

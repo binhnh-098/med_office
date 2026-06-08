@@ -1,6 +1,7 @@
 package com.example.med_office.service;
 
 import com.example.med_office.MedOfficeApplication;
+import com.example.med_office.dto.WarehouseHierarchyItem;
 import com.example.med_office.dto.WarehouseInboundAction;
 import com.example.med_office.dto.WarehouseInboundCreateRequest;
 import com.example.med_office.dto.WarehouseInboundDetailResponse;
@@ -73,6 +74,9 @@ class WarehousePermissionIntegrationTest {
     @Autowired
     private CatalogOptionService catalogOptionService;
 
+    @Autowired
+    private WarehouseService warehouseService;
+
     private Warehouse warehouseKt;
     private Warehouse warehouseLe;
     private WarehouseInbound inboundKt;
@@ -106,6 +110,7 @@ class WarehousePermissionIntegrationTest {
 
         List<WarehouseOptionResponse> warehouseOptions = catalogOptionService.getWarehouseOptions();
         WarehouseInboundPageResponse inboundPage = warehouseInboundService.findAll(0, 20, null, null, null, null, null);
+        List<WarehouseHierarchyItem> hierarchy = warehouseService.getHierarchy();
 
         assertThat(warehouseOptions)
                 .extracting(WarehouseOptionResponse::code)
@@ -113,6 +118,12 @@ class WarehousePermissionIntegrationTest {
         assertThat(inboundPage.content())
                 .extracting(WarehouseInboundListItemResponse::code)
                 .containsExactly("NK-KT-001");
+        assertThat(hierarchy)
+                .extracting(WarehouseHierarchyItem::code)
+                .containsExactly("KT");
+        assertThat(hierarchy.getFirst().managers())
+                .extracting(manager -> manager.code())
+                .containsExactly("NVKT");
     }
 
     @Test
@@ -182,10 +193,12 @@ class WarehousePermissionIntegrationTest {
         List<WarehouseOptionResponse> warehouseOptions = catalogOptionService.getWarehouseOptions();
         WarehouseInboundPageResponse inboundPage = warehouseInboundService.findAll(0, 20, null, null, null, null, null);
         WarehouseInboundDetailResponse detailResponse = warehouseInboundService.findById(inboundLe.getId());
+        List<WarehouseHierarchyItem> hierarchy = warehouseService.getHierarchy();
 
         assertThat(warehouseOptions).hasSize(2);
         assertThat(inboundPage.content()).hasSize(2);
         assertThat(detailResponse.code()).isEqualTo("NK-LE-001");
+        assertThat(hierarchy).hasSize(2);
     }
 
     private void authenticate(String username, String authority) {

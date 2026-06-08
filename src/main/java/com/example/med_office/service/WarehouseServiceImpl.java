@@ -56,22 +56,30 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final WarehouseRepository warehouseRepository;
     private final WarehouseManagerRepository warehouseManagerRepository;
     private final HoSoNhanVienRepository hoSoNhanVienRepository;
+    private final WarehousePermissionScopeService warehousePermissionScopeService;
 
     public WarehouseServiceImpl(
             WarehouseRepository warehouseRepository,
             WarehouseManagerRepository warehouseManagerRepository,
-            HoSoNhanVienRepository hoSoNhanVienRepository
+            HoSoNhanVienRepository hoSoNhanVienRepository,
+            WarehousePermissionScopeService warehousePermissionScopeService
     ) {
         this.warehouseRepository = warehouseRepository;
         this.warehouseManagerRepository = warehouseManagerRepository;
         this.hoSoNhanVienRepository = hoSoNhanVienRepository;
+        this.warehousePermissionScopeService = warehousePermissionScopeService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public WarehousePageResponse findAll(String keyword, String status, int page, int size, String sort) {
+        Set<String> warehouseScope = resolveWarehouseScope();
+        if (!warehousePermissionScopeService.isAdmin() && warehouseScope.isEmpty()) {
+            return new WarehousePageResponse(List.of(), page, size, 0, 0);
+        }
+
         Page<Warehouse> result = warehouseRepository.findAll(
-                buildSpecification(keyword, status),
+                buildSpecification(keyword, status, warehouseScope),
                 PageRequest.of(page, size, parseSort(sort))
         );
         Map<String, List<WarehouseManagerResponse>> managersByWarehouseId = getManagersByWarehouseIds(
@@ -92,6 +100,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Transactional(readOnly = true)
     public WarehouseResponse findById(String id) {
         Warehouse warehouse = requireWarehouse(id);
+        assertWarehouseAccess(warehouse.getId(), "Ban khong co quyen truy cap kho nay.");
         return toResponse(warehouse, getManagersByWarehouseIds(List.of(id)).getOrDefault(id, List.of()));
     }
 
@@ -100,7 +109,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     public WarehouseResponse create(WarehouseRequest request) {
         String code = trim(request.code());
         if (warehouseRepository.existsByCodeIgnoreCase(code)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mã kho đã tồn tại.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma kho da ton tai.");
         }
         validateManagerIds(request.managerIds());
         validateParentChange(null, request.parentWarehouseId());
@@ -118,7 +127,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         Warehouse warehouse = requireWarehouse(id);
         String code = trim(request.code());
         if (warehouseRepository.existsByCodeIgnoreCaseAndIdNot(code, id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mã kho đã tồn tại.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma kho da ton tai.");
         }
         validateManagerIds(request.managerIds());
         validateParentChange(id, request.parentWarehouseId());
@@ -141,8 +150,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Transactional(readOnly = true)
     public List<WarehouseHierarchyItem> getHierarchy() {
-        List<Warehouse> warehouses = warehouseRepository.findAll(Sort.by("code").ascending().and(Sort.by("id").ascending()));
-        return buildHierarchy(warehouses);
+        return buildHierarchy(findWarehousesInScope());
     }
 
     @Override
@@ -157,10 +165,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         for (WarehouseHierarchyUpdateRequest.WarehouseParentUpdate update : request.warehouses()) {
             String id = trim(update.id());
             if (!updatedWarehouseIds.add(id)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách cấu hình kho bị trùng.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sach cau hinh kho bi trung.");
             }
             if (!warehousesById.containsKey(id)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho không tồn tại.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho khong ton tai.");
             }
             parentByWarehouseId.put(id, normalizeId(update.parentWarehouseId()));
         }
@@ -174,14 +182,20 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Transactional(readOnly = true)
     public WarehouseSummaryResponse getSummary() {
-        long totalWarehouses = warehouseRepository.count();
-        long activeWarehouses = warehouseRepository.countByStatusIgnoreCase(ACTIVE);
+        List<Warehouse> warehouses = findWarehousesInScope();
+        long totalWarehouses = warehouses.size();
+        long activeWarehouses = warehouses.stream()
+                .filter(warehouse -> ACTIVE.equalsIgnoreCase(warehouse.getStatus()))
+                .count();
         return new WarehouseSummaryResponse(totalWarehouses, activeWarehouses, totalWarehouses - activeWarehouses, 0);
     }
 
-    private Specification<Warehouse> buildSpecification(String keyword, String status) {
+    private Specification<Warehouse> buildSpecification(String keyword, String status, Set<String> warehouseScope) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (warehouseScope != null && !warehouseScope.isEmpty()) {
+                predicates.add(root.get("id").in(warehouseScope));
+            }
             if (keyword != null && !keyword.isBlank()) {
                 String normalizedKeyword = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
                 predicates.add(criteriaBuilder.or(
@@ -219,7 +233,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     private void validateManagerIds(List<String> managerIds) {
         List<String> normalizedIds = normalizeIds(managerIds);
         if (hoSoNhanVienRepository.findAllById(normalizedIds).size() != normalizedIds.size()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Người phụ trách kho không tồn tại.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nguoi phu trach kho khong ton tai.");
         }
     }
 
@@ -275,22 +289,41 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     private List<WarehouseHierarchyItem> buildHierarchy(List<Warehouse> warehouses) {
+        Map<String, List<WarehouseManagerResponse>> managersByWarehouseId = getManagersByWarehouseIds(
+                warehouses.stream().map(Warehouse::getId).toList()
+        );
+        Set<String> visibleWarehouseIds = warehouses.stream()
+                .map(Warehouse::getId)
+                .collect(Collectors.toSet());
         Map<String, List<Warehouse>> childrenByParentId = warehouses.stream()
                 .filter(warehouse -> warehouse.getParentWarehouseId() != null)
                 .collect(Collectors.groupingBy(Warehouse::getParentWarehouseId));
         return warehouses.stream()
-                .filter(warehouse -> warehouse.getParentWarehouseId() == null)
+                .filter(warehouse -> warehouse.getParentWarehouseId() == null
+                        || !visibleWarehouseIds.contains(warehouse.getParentWarehouseId()))
                 .sorted(Comparator.comparing(Warehouse::getCode, String.CASE_INSENSITIVE_ORDER).thenComparing(Warehouse::getId))
-                .map(warehouse -> toHierarchyItem(warehouse, childrenByParentId))
+                .map(warehouse -> toHierarchyItem(warehouse, childrenByParentId, managersByWarehouseId))
                 .toList();
     }
 
-    private WarehouseHierarchyItem toHierarchyItem(Warehouse warehouse, Map<String, List<Warehouse>> childrenByParentId) {
+    private WarehouseHierarchyItem toHierarchyItem(
+            Warehouse warehouse,
+            Map<String, List<Warehouse>> childrenByParentId,
+            Map<String, List<WarehouseManagerResponse>> managersByWarehouseId
+    ) {
         List<WarehouseHierarchyItem> children = childrenByParentId.getOrDefault(warehouse.getId(), List.of()).stream()
                 .sorted(Comparator.comparing(Warehouse::getCode, String.CASE_INSENSITIVE_ORDER).thenComparing(Warehouse::getId))
-                .map(child -> toHierarchyItem(child, childrenByParentId))
+                .map(child -> toHierarchyItem(child, childrenByParentId, managersByWarehouseId))
                 .toList();
-        return new WarehouseHierarchyItem(warehouse.getId(), warehouse.getCode(), warehouse.getName(), warehouse.getStatus(), children);
+        return new WarehouseHierarchyItem(
+                warehouse.getId(),
+                warehouse.getCode(),
+                warehouse.getName(),
+                warehouse.getParentWarehouseId(),
+                warehouse.getStatus(),
+                managersByWarehouseId.getOrDefault(warehouse.getId(), List.of()),
+                children
+        );
     }
 
     private void validateParentChange(String warehouseId, String parentWarehouseId) {
@@ -298,7 +331,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         if (warehouseId != null) {
             parentByWarehouseId.put(warehouseId, normalizeId(parentWarehouseId));
         } else if (normalizeId(parentWarehouseId) != null && !parentByWarehouseId.containsKey(normalizeId(parentWarehouseId))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho cha không tồn tại.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho cha khong ton tai.");
         }
         validateHierarchy(parentByWarehouseId);
     }
@@ -308,10 +341,10 @@ public class WarehouseServiceImpl implements WarehouseService {
             String warehouseId = entry.getKey();
             String parentWarehouseId = entry.getValue();
             if (warehouseId.equals(parentWarehouseId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho không thể là cha của chính nó.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho khong the la cha cua chinh no.");
             }
             if (parentWarehouseId != null && !parentByWarehouseId.containsKey(parentWarehouseId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho cha không tồn tại.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho cha khong ton tai.");
             }
         }
         for (String warehouseId : parentByWarehouseId.keySet()) {
@@ -319,7 +352,7 @@ public class WarehouseServiceImpl implements WarehouseService {
             String currentId = warehouseId;
             while (currentId != null) {
                 if (!visited.add(currentId)) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể chọn kho trực thuộc làm kho cha.");
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khong the chon kho truc thuoc lam kho cha.");
                 }
                 currentId = parentByWarehouseId.get(currentId);
             }
@@ -334,7 +367,30 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     private Warehouse requireWarehouse(String id) {
         return warehouseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy kho."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay kho."));
+    }
+
+    private List<Warehouse> findWarehousesInScope() {
+        if (warehousePermissionScopeService.isAdmin()) {
+            return warehouseRepository.findAll(Sort.by("code").ascending().and(Sort.by("id").ascending()));
+        }
+
+        Set<String> warehouseScope = resolveWarehouseScope();
+        if (warehouseScope.isEmpty()) {
+            return List.of();
+        }
+
+        return warehouseRepository.findAllById(warehouseScope).stream()
+                .sorted(Comparator.comparing(Warehouse::getCode, String.CASE_INSENSITIVE_ORDER).thenComparing(Warehouse::getId))
+                .toList();
+    }
+
+    private Set<String> resolveWarehouseScope() {
+        return warehousePermissionScopeService.isAdmin() ? Set.of() : warehousePermissionScopeService.getManagedWarehouseIds();
+    }
+
+    private void assertWarehouseAccess(String warehouseId, String message) {
+        warehousePermissionScopeService.assertWarehouseAccess(warehouseId, message);
     }
 
     private List<String> normalizeIds(List<String> values) {
@@ -358,3 +414,4 @@ public class WarehouseServiceImpl implements WarehouseService {
         return value == null ? null : value.trim();
     }
 }
+

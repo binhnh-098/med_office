@@ -1,21 +1,21 @@
 package com.example.med_office.config;
 
-import com.example.med_office.security.PermissionCatalog;
 import com.example.med_office.security.ActiveAccountFilter;
+import com.example.med_office.security.PermissionCatalog;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -52,6 +52,26 @@ public class SecurityConfig {
                         .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
                         .requestMatchers(HttpMethod.PUT, "/api/kho/**")
                         .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
+                        .requestMatchers(HttpMethod.GET, "/api/warehouses", "/api/warehouses/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
+                        .requestMatchers(HttpMethod.GET, "/api/warehouse-inbounds", "/api/warehouse-inbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/warehouse-inbounds", "/api/warehouse-inbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
+                        .requestMatchers(HttpMethod.PUT, "/api/warehouse-inbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
+                        .requestMatchers(HttpMethod.GET, "/api/warehouse-outbounds", "/api/warehouse-outbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
+                        .requestMatchers(HttpMethod.POST, "/api/warehouse-outbounds", "/api/warehouse-outbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
+                        .requestMatchers(HttpMethod.PUT, "/api/warehouse-outbounds/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_MANAGE)
+                        .requestMatchers(HttpMethod.GET, "/api/warehouse-inventories", "/api/warehouse-inventories/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
+                        .requestMatchers(HttpMethod.GET, "/api/inventory-balances", "/api/inventory-balances/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
+                        .requestMatchers(HttpMethod.GET, "/api/inventory-items", "/api/inventory-items/**")
+                        .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
                         .requestMatchers("/api/admin/**").hasAuthority(PermissionCatalog.SYSTEM_PERMISSIONS_MANAGE)
                         .requestMatchers("/api/chuc-vu/**").hasAuthority(PermissionCatalog.EMPLOYEES_ORGANIZATION_VIEW)
                         .requestMatchers(HttpMethod.GET, "/api/chuyen-khoa", "/api/chuyen-khoa/**")

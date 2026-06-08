@@ -283,6 +283,56 @@ CREATE TABLE IF NOT EXISTS warehouse_inbound_items (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS warehouse_outbounds (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    code VARCHAR(50) NOT NULL,
+    outbound_date DATE NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    warehouse_id CHAR(36) NOT NULL,
+    warehouse_name VARCHAR(255) NOT NULL,
+    destination_name VARCHAR(255) NULL,
+    received_by VARCHAR(255) NULL,
+    requested_by VARCHAR(255) NULL,
+    note VARCHAR(2000) NULL,
+    approval_note VARCHAR(2000) NULL,
+    rejection_reason VARCHAR(2000) NULL,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_warehouse_outbounds_code (code),
+    KEY idx_warehouse_outbounds_status (status),
+    KEY idx_warehouse_outbounds_outbound_date (outbound_date),
+    KEY idx_warehouse_outbounds_warehouse_id (warehouse_id),
+    CONSTRAINT fk_warehouse_outbounds_warehouse
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+        ON DELETE RESTRICT
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS warehouse_outbound_items (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    warehouse_outbound_id CHAR(36) NOT NULL,
+    item_id VARCHAR(100) NULL,
+    item_code VARCHAR(100) NULL,
+    item_name VARCHAR(255) NOT NULL,
+    unit VARCHAR(100) NULL,
+    quantity DECIMAL(18,2) NOT NULL,
+    batch_number VARCHAR(100) NULL,
+    expiry_date DATE NULL,
+    note VARCHAR(1000) NULL,
+    PRIMARY KEY (id),
+    KEY idx_warehouse_outbound_items_outbound_id (warehouse_outbound_id),
+    KEY idx_warehouse_outbound_items_item_code (item_code),
+    KEY idx_warehouse_outbound_items_item_name (item_name),
+    CONSTRAINT fk_warehouse_outbound_items_outbound
+        FOREIGN KEY (warehouse_outbound_id) REFERENCES warehouse_outbounds (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS cong_van_den (
     id CHAR(36) NOT NULL DEFAULT (UUID()),
     so_cong_van VARCHAR(100) NOT NULL,
