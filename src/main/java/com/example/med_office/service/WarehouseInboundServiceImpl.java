@@ -107,7 +107,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     @Override
     @Transactional
     public WarehouseInboundMutationResponse updateDraft(String id, WarehouseInboundUpsertRequest request) {
-        WarehouseInbound warehouseInbound = requireAccessibleInbound(id);
+        WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.DRAFT, "Chi duoc cap nhat phieu nhap kho o trang thai DRAFT");
         validateUniqueCode(request.code(), id);
 
@@ -119,7 +119,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     @Override
     @Transactional
     public WarehouseInboundMutationResponse submit(String id) {
-        WarehouseInbound warehouseInbound = requireAccessibleInbound(id);
+        WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.DRAFT, "Phieu nhap kho khong o trang thai hop le de gui duyet");
         warehouseInbound.setStatus(WarehouseInboundStatus.PENDING_APPROVAL);
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
@@ -129,8 +129,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     @Override
     @Transactional
     public WarehouseInboundMutationResponse approve(String id, WarehouseInboundApprovalRequest request) {
-        WarehouseInbound warehouseInbound = requireAccessibleInbound(id);
+        WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.PENDING_APPROVAL, "Chi duyet duoc phieu nhap kho o trang thai PENDING_APPROVAL");
+        lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
         warehouseInbound.setStatus(WarehouseInboundStatus.APPROVED);
         warehouseInbound.setApprovalNote(trim(request.note()));
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
@@ -140,8 +141,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     @Override
     @Transactional
     public WarehouseInboundMutationResponse reject(String id, WarehouseInboundRejectRequest request) {
-        WarehouseInbound warehouseInbound = requireAccessibleInbound(id);
+        WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.PENDING_APPROVAL, "Chi tu choi duoc phieu nhap kho o trang thai PENDING_APPROVAL");
+        lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
         warehouseInbound.setStatus(WarehouseInboundStatus.REJECTED);
         warehouseInbound.setRejectionReason(trim(request.reason()));
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
@@ -151,8 +153,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     @Override
     @Transactional
     public WarehouseInboundMutationResponse complete(String id) {
-        WarehouseInbound warehouseInbound = requireAccessibleInbound(id);
+        WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.APPROVED, "Chi hoan tat duoc phieu nhap kho o trang thai APPROVED");
+        lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
         warehouseInbound.setStatus(WarehouseInboundStatus.COMPLETED);
         warehouseInbound.setCompletedAt(Instant.now());
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
@@ -311,8 +314,19 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay phieu nhap kho"));
     }
 
+    private WarehouseInbound requireInboundForUpdate(String id) {
+        return warehouseInboundRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay phieu nhap kho"));
+    }
+
     private WarehouseInbound requireAccessibleInbound(String id) {
         WarehouseInbound warehouseInbound = requireInbound(id);
+        assertWarehouseAccess(warehouseInbound.getWarehouseId());
+        return warehouseInbound;
+    }
+
+    private WarehouseInbound requireAccessibleInboundForUpdate(String id) {
+        WarehouseInbound warehouseInbound = requireInboundForUpdate(id);
         assertWarehouseAccess(warehouseInbound.getWarehouseId());
         return warehouseInbound;
     }
@@ -426,6 +440,11 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
                 warehouseId,
                 "Ban khong co quyen truy cap phieu nhap cua kho nay"
         );
+    }
+
+    private Warehouse lockWarehouseForInventoryTransition(String warehouseId, String notFoundMessage) {
+        return warehouseRepository.findByIdForUpdate(trim(warehouseId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, notFoundMessage));
     }
 
     private String normalizeNullable(String value) {

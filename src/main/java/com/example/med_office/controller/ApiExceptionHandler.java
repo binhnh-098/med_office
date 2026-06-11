@@ -62,6 +62,20 @@ public class ApiExceptionHandler {
                 .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Validation failed", fieldErrors));
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String path = violation.getPropertyPath() == null ? "" : violation.getPropertyPath().toString();
+            String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+            fieldErrors.put(field, violation.getMessage());
+        });
+
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Validation failed", fieldErrors));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Object>> handleInvalidCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(ApiCode.UNAUTHORIZED)
@@ -91,7 +105,7 @@ public class ApiExceptionHandler {
                 .body(ApiResponse.error(ex.getStatusCode().value(), ex.getReason()));
     }
 
-    @ExceptionHandler({DataIntegrityViolationException.class, ConstraintViolationException.class})
+    @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDatabaseConstraintViolation(Exception ex) {
         log.warn("Database constraint violation", ex);
         return ResponseEntity.badRequest()

@@ -18,11 +18,14 @@ import com.example.med_office.repository.RolePermissionRepository;
 import com.example.med_office.repository.RoleRepository;
 import com.example.med_office.repository.UserRoleRepository;
 import com.example.med_office.security.AppRoles;
+import com.example.med_office.security.PermissionCatalog;
+import com.example.med_office.security.PermissionDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -67,6 +70,7 @@ public class AccessControlServiceImpl implements AccessControlService {
 
     @Override
     public List<PermissionModuleResponse> getPermissionsByModule() {
+        syncCatalogPermissions(permissionCodesFromCatalog());
         Map<String, List<Permission>> permissionsByModule = permissionRepository.findAll().stream()
                 .sorted(Comparator.comparing(Permission::getModuleCode).thenComparing(Permission::getCode))
                 .collect(Collectors.groupingBy(
@@ -98,11 +102,12 @@ public class AccessControlServiceImpl implements AccessControlService {
     @Transactional
     public void updateRolePermissions(String roleId, RolePermissionsUpdateRequest request) {
         requireRole(roleId);
-        List<String> requestedCodes = request.permissionCodes().stream()
+        List<String> requestedCodes = (request.permissionCodes() == null ? List.<String>of() : request.permissionCodes()).stream()
                 .filter(code -> code != null && !code.isBlank())
                 .map(String::trim)
                 .distinct()
                 .toList();
+        syncCatalogPermissions(requestedCodes);
         Map<String, Permission> permissionsByCode = permissionRepository.findByCodeIn(requestedCodes).stream()
                 .collect(Collectors.toMap(Permission::getCode, Function.identity()));
         List<String> missingCodes = requestedCodes.stream()
@@ -232,6 +237,45 @@ public class AccessControlServiceImpl implements AccessControlService {
     private Role requireRole(String roleId) {
         return roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Role does not exist"));
+    }
+
+    private void syncCatalogPermissions(Collection<String> requestedCodes) {
+        if (requestedCodes == null || requestedCodes.isEmpty()) {
+            return;
+        }
+
+        Map<String, PermissionDefinition> definitionsByCode = PermissionCatalog.definitions().stream()
+                .filter(definition -> requestedCodes.contains(definition.code()))
+                .collect(Collectors.toMap(PermissionDefinition::code, Function.identity()));
+        if (definitionsByCode.isEmpty()) {
+            return;
+        }
+
+        Map<String, Permission> existingPermissionsByCode = permissionRepository.findByCodeIn(definitionsByCode.keySet()).stream()
+                .collect(Collectors.toMap(Permission::getCode, Function.identity()));
+        List<Permission> missingPermissions = definitionsByCode.values().stream()
+                .filter(definition -> !existingPermissionsByCode.containsKey(definition.code()))
+                .map(this::newPermissionFromDefinition)
+                .toList();
+        if (!missingPermissions.isEmpty()) {
+            permissionRepository.saveAll(missingPermissions);
+        }
+    }
+
+    private List<String> permissionCodesFromCatalog() {
+        return PermissionCatalog.definitions().stream()
+                .map(PermissionDefinition::code)
+                .toList();
+    }
+
+    private Permission newPermissionFromDefinition(PermissionDefinition definition) {
+        Permission permission = new Permission();
+        permission.setCode(definition.code());
+        permission.setModuleCode(definition.moduleCode());
+        permission.setModuleName(definition.moduleName());
+        permission.setName(definition.name());
+        permission.setDescription(definition.description());
+        return permission;
     }
 
     private RoleResponse toRoleResponse(Role role) {

@@ -1,6 +1,7 @@
 package com.example.med_office.repository;
 
 import com.example.med_office.dto.WarehouseInventoryAggregateRow;
+import com.example.med_office.entity.WarehouseInboundStatus;
 import com.example.med_office.entity.WarehouseInboundItem;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,7 +18,8 @@ public interface WarehouseInboundItemRepository extends JpaRepository<WarehouseI
             from WarehouseInboundItem i
             where (:keyword is null
                 or lower(i.itemCode) like lower(concat('%', :keyword, '%'))
-                or lower(i.itemName) like lower(concat('%', :keyword, '%')))
+                or lower(i.itemName) like lower(concat('%', :keyword, '%'))
+                or lower(i.batchNumber) like lower(concat('%', :keyword, '%')))
             order by i.itemName asc, i.itemCode asc, i.id asc
             """)
     List<WarehouseInboundItem> findOptionItems(@Param("keyword") String keyword, Pageable pageable);
@@ -36,16 +38,18 @@ public interface WarehouseInboundItemRepository extends JpaRepository<WarehouseI
             )
             from WarehouseInboundItem i
             join i.warehouseInbound inbound
-            where inbound.status = com.example.med_office.entity.WarehouseInboundStatus.COMPLETED
+            where inbound.status in :statuses
               and inbound.warehouseId in :warehouseIds
               and (:warehouseId is null or inbound.warehouseId = :warehouseId)
               and (:keyword is null
                 or lower(i.itemCode) like lower(concat('%', :keyword, '%'))
-                or lower(i.itemName) like lower(concat('%', :keyword, '%')))
+                or lower(i.itemName) like lower(concat('%', :keyword, '%'))
+                or lower(i.batchNumber) like lower(concat('%', :keyword, '%')))
             group by i.itemId, i.itemCode, i.itemName, inbound.warehouseId, inbound.warehouseName,
                      i.batchNumber, i.expiryDate, i.unit
             """)
-    List<WarehouseInventoryAggregateRow> summarizeCompletedQuantities(
+    List<WarehouseInventoryAggregateRow> summarizeQuantities(
+            @Param("statuses") Collection<WarehouseInboundStatus> statuses,
             @Param("warehouseIds") Collection<String> warehouseIds,
             @Param("warehouseId") String warehouseId,
             @Param("keyword") String keyword
