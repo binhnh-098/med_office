@@ -43,17 +43,20 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     private final WarehouseRepository warehouseRepository;
     private final NhaCungCapRepository nhaCungCapRepository;
     private final WarehousePermissionScopeService warehousePermissionScopeService;
+    private final WarehouseInventoryMinQuantityService warehouseInventoryMinQuantityService;
 
     public WarehouseInboundServiceImpl(
             WarehouseInboundRepository warehouseInboundRepository,
             WarehouseRepository warehouseRepository,
             NhaCungCapRepository nhaCungCapRepository,
-            WarehousePermissionScopeService warehousePermissionScopeService
+            WarehousePermissionScopeService warehousePermissionScopeService,
+            WarehouseInventoryMinQuantityService warehouseInventoryMinQuantityService
     ) {
         this.warehouseInboundRepository = warehouseInboundRepository;
         this.warehouseRepository = warehouseRepository;
         this.nhaCungCapRepository = nhaCungCapRepository;
         this.warehousePermissionScopeService = warehousePermissionScopeService;
+        this.warehouseInventoryMinQuantityService = warehouseInventoryMinQuantityService;
     }
 
     @Override
@@ -134,6 +137,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
         warehouseInbound.setStatus(WarehouseInboundStatus.APPROVED);
         warehouseInbound.setApprovalNote(trim(request.note()));
+        warehouseInventoryMinQuantityService.upsertFromInbound(warehouseInbound.getWarehouseId(), warehouseInbound.getItems());
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
     }
@@ -158,6 +162,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
         warehouseInbound.setStatus(WarehouseInboundStatus.COMPLETED);
         warehouseInbound.setCompletedAt(Instant.now());
+        warehouseInventoryMinQuantityService.upsertFromInbound(warehouseInbound.getWarehouseId(), warehouseInbound.getItems());
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
     }
@@ -243,6 +248,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             item.setLineTotal(itemRequest.quantity().multiply(itemRequest.unitPrice()).stripTrailingZeros());
             item.setBatchNumber(trim(itemRequest.batchNumber()));
             item.setExpiryDate(itemRequest.expiryDate());
+            item.setMinQuantity(stripNullable(itemRequest.minQuantity()));
             warehouseInbound.addItem(item);
         }
     }
@@ -262,6 +268,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             }
             if (item.unitPrice() == null || item.unitPrice().compareTo(BigDecimal.ZERO) < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Don gia o dong thu " + (index + 1) + " phai lon hon hoac bang 0");
+            }
+            if (item.minQuantity() != null && item.minQuantity().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "So ton toi thieu o dong thu " + (index + 1) + " phai lon hon hoac bang 0");
             }
             if (isBlank(item.itemId()) && isBlank(item.itemCode())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dong vat tu thu " + (index + 1) + " phai co itemId hoac itemCode");
@@ -399,7 +408,8 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
                                 item.getUnitPrice(),
                                 item.getLineTotal(),
                                 item.getBatchNumber(),
-                                item.getExpiryDate()
+                                item.getExpiryDate(),
+                                item.getMinQuantity()
                         ))
                         .toList()
         );
@@ -425,6 +435,10 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
 
     private BigDecimal defaultDecimal(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private BigDecimal stripNullable(BigDecimal value) {
+        return value == null ? null : value.stripTrailingZeros();
     }
 
     private boolean isBlank(String value) {

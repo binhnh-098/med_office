@@ -56,6 +56,9 @@ public class WarehouseInboundItem {
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
+    @Column(name = "min_quantity", precision = 18, scale = 2)
+    private BigDecimal minQuantity;
+
     @PrePersist
     public void prePersist() {
         if (id == null || id.isBlank()) {

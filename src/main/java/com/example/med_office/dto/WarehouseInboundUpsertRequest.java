@@ -67,7 +67,10 @@ public record WarehouseInboundUpsertRequest(
             @Size(max = 100, message = "So lo khong duoc vuot qua 100 ky tu")
             String batchNumber,
 
-            LocalDate expiryDate
+            LocalDate expiryDate,
+
+            @DecimalMin(value = "0", inclusive = true, message = "So ton toi thieu phai lon hon hoac bang 0")
+            BigDecimal minQuantity
     ) {
     }
 }

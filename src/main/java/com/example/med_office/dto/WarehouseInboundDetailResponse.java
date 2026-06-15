@@ -35,7 +35,8 @@ public record WarehouseInboundDetailResponse(
             BigDecimal unitPrice,
             BigDecimal lineTotal,
             String batchNumber,
-            LocalDate expiryDate
+            LocalDate expiryDate,
+            BigDecimal minQuantity
     ) {
     }
 }

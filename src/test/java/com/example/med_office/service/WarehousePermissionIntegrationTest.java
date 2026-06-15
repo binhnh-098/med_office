@@ -277,6 +277,7 @@ class WarehousePermissionIntegrationTest {
                 BigDecimal.ONE,
                 BigDecimal.TEN,
                 null,
+                null,
                 null
         );
     }
