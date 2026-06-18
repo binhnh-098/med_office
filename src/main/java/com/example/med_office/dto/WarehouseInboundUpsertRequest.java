@@ -12,9 +12,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record WarehouseInboundUpsertRequest(
-        @NotBlank(message = "Ma phieu nhap khong duoc de trong")
         @Size(max = 50, message = "Ma phieu nhap khong duoc vuot qua 50 ky tu")
         String code,
+
 
         @NotNull(message = "Ngay nhap khong duoc de trong")
         LocalDate receiptDate,
@@ -26,6 +26,11 @@ public record WarehouseInboundUpsertRequest(
 
         @Size(max = 255, message = "Ten nha cung cap khong duoc vuot qua 255 ky tu")
         String supplierName,
+
+        String sourceWarehouseId,
+
+        @Size(max = 255, message = "Ten kho xuat khong duoc vuot qua 255 ky tu")
+        String sourceWarehouseName,
 
         @Size(max = 100, message = "So hoa don khong duoc vuot qua 100 ky tu")
         String invoiceNumber,

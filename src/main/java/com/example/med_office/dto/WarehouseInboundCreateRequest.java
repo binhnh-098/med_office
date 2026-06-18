@@ -22,6 +22,11 @@ public record WarehouseInboundCreateRequest(
         @Size(max = 255, message = "Ten nha cung cap khong duoc vuot qua 255 ky tu")
         String supplierName,
 
+        String sourceWarehouseId,
+
+        @Size(max = 255, message = "Ten kho xuat khong duoc vuot qua 255 ky tu")
+        String sourceWarehouseName,
+
         @Size(max = 100, message = "So hoa don khong duoc vuot qua 100 ky tu")
         String invoiceNumber,
 
@@ -52,6 +57,8 @@ public record WarehouseInboundCreateRequest(
                 warehouseId,
                 supplierId,
                 supplierName,
+                sourceWarehouseId,
+                sourceWarehouseName,
                 invoiceNumber,
                 sourceDocument,
                 deliveryBy,

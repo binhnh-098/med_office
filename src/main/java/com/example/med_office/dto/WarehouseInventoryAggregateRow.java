@@ -12,6 +12,7 @@ public record WarehouseInventoryAggregateRow(
         String batchNumber,
         LocalDate expiryDate,
         String unit,
-        BigDecimal quantity
+        BigDecimal quantity,
+        BigDecimal unitPrice
 ) {
 }

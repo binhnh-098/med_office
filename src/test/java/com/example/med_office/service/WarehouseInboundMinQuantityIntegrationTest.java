@@ -92,6 +92,8 @@ class WarehouseInboundMinQuantityIntegrationTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 List.of(itemRequest(new BigDecimal("10"), new BigDecimal("20"))),
                 WarehouseInboundAction.SAVE_DRAFT
         ));
@@ -107,6 +109,8 @@ class WarehouseInboundMinQuantityIntegrationTest {
                         "PNK-001",
                         LocalDate.of(2026, 6, 12),
                         warehouse.getId(),
+                        null,
+                        null,
                         null,
                         null,
                         null,

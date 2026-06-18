@@ -62,6 +62,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
             String keyword,
             String status,
             String warehouseId,
+            String destinationWarehouseId,
             LocalDate fromDate,
             LocalDate toDate
     ) {
@@ -72,7 +73,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         }
 
         Page<WarehouseOutbound> result = warehouseOutboundRepository.findAll(
-                buildSpecification(keyword, status, warehouseId, fromDate, toDate, warehouseScope),
+                buildSpecification(keyword, status, warehouseId, destinationWarehouseId, fromDate, toDate, warehouseScope),
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "outboundDate", "createdAt", "id"))
         );
 
@@ -96,10 +97,16 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
     public WarehouseOutboundMutationResponse create(WarehouseOutboundCreateRequest request) {
         WarehouseOutboundUpsertRequest payload = request.toUpsertRequest();
         validateCreatePayload(payload);
-        validateUniqueCode(payload.code(), null);
+
+        String resolvedCode = payload.code();
+        if (resolvedCode == null || resolvedCode.trim().isEmpty() || "(Tự động)".equalsIgnoreCase(resolvedCode.trim())) {
+            resolvedCode = generateOutboundCode();
+        }
+
+        validateUniqueCode(resolvedCode, null);
 
         WarehouseOutbound warehouseOutbound = new WarehouseOutbound();
-        applyPayload(warehouseOutbound, payload, request.action());
+        applyPayload(warehouseOutbound, payload, resolvedCode, request.action());
         WarehouseOutbound saved = warehouseOutboundRepository.save(warehouseOutbound);
         return toMutationResponse(saved);
     }
@@ -108,10 +115,16 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
     @Transactional
     public WarehouseOutboundMutationResponse updateDraft(String id, WarehouseOutboundUpsertRequest request) {
         WarehouseOutbound warehouseOutbound = requireAccessibleOutboundForUpdate(id);
-        requireStatus(warehouseOutbound, WarehouseOutboundStatus.DRAFT, "Chi duoc cap nhat phieu xuat kho o trang thai DRAFT");
-        validateUniqueCode(request.code(), id);
+        requireStatus(warehouseOutbound, "Chi duoc cap nhat phieu xuat kho o trang thai DRAFT hoac REJECTED", WarehouseOutboundStatus.DRAFT, WarehouseOutboundStatus.REJECTED);
 
-        applyPayload(warehouseOutbound, request, WarehouseOutboundAction.SAVE_DRAFT);
+        String resolvedCode = request.code();
+        if (resolvedCode == null || resolvedCode.trim().isEmpty() || "(Tự động)".equalsIgnoreCase(resolvedCode.trim())) {
+            resolvedCode = warehouseOutbound.getCode();
+        }
+
+        validateUniqueCode(resolvedCode, id);
+
+        applyPayload(warehouseOutbound, request, resolvedCode, WarehouseOutboundAction.SAVE_DRAFT);
         WarehouseOutbound saved = warehouseOutboundRepository.save(warehouseOutbound);
         return toMutationResponse(saved);
     }
@@ -120,13 +133,15 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
     @Transactional
     public WarehouseOutboundMutationResponse submit(String id) {
         WarehouseOutbound warehouseOutbound = requireAccessibleOutboundForUpdate(id);
-        requireStatus(warehouseOutbound, WarehouseOutboundStatus.DRAFT, "Phieu xuat kho khong o trang thai hop le de gui duyet");
+        requireStatus(warehouseOutbound, "Phieu xuat kho khong o trang thai hop le de gui duyet", WarehouseOutboundStatus.DRAFT, WarehouseOutboundStatus.REJECTED);
         validateInventoryTransitionWarehouses(warehouseOutbound);
         warehouseInventoryService.assertSufficientAvailability(
                 warehouseOutbound.getWarehouseId(),
                 toItemRequests(warehouseOutbound),
                 warehouseOutbound.getOutboundDate()
         );
+        warehouseOutbound.setRejectionReason(null);
+        warehouseOutbound.setApprovalNote(null);
         warehouseOutbound.setStatus(WarehouseOutboundStatus.PENDING_APPROVAL);
         WarehouseOutbound saved = warehouseOutboundRepository.save(warehouseOutbound);
         return toMutationResponse(saved);
@@ -175,10 +190,19 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         return toMutationResponse(saved);
     }
 
+    @Override
+    @Transactional
+    public void delete(String id) {
+        WarehouseOutbound warehouseOutbound = requireAccessibleOutboundForUpdate(id);
+        requireStatus(warehouseOutbound, WarehouseOutboundStatus.DRAFT, "Chi co the xoa phieu o trang thai nhap");
+        warehouseOutboundRepository.delete(warehouseOutbound);
+    }
+
     private Specification<WarehouseOutbound> buildSpecification(
             String keyword,
             String status,
             String warehouseId,
+            String destinationWarehouseId,
             LocalDate fromDate,
             LocalDate toDate,
             Set<String> warehouseScope
@@ -211,6 +235,11 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                 predicates.add(criteriaBuilder.equal(root.get("warehouseId"), normalizedWarehouseId));
             }
 
+            if (destinationWarehouseId != null && !destinationWarehouseId.isBlank()) {
+                String normalizedDestId = destinationWarehouseId.trim();
+                predicates.add(criteriaBuilder.equal(root.get("destinationWarehouseId"), normalizedDestId));
+            }
+
             if (fromDate != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("outboundDate"), fromDate));
             }
@@ -223,7 +252,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         };
     }
 
-    private void applyPayload(WarehouseOutbound warehouseOutbound, WarehouseOutboundUpsertRequest request, WarehouseOutboundAction action) {
+    private void applyPayload(WarehouseOutbound warehouseOutbound, WarehouseOutboundUpsertRequest request, String resolvedCode, WarehouseOutboundAction action) {
         Warehouse warehouse = requireActiveWarehouse(request.warehouseId(), "Kho xuat khong ton tai", "Kho xuat khong hoat dong");
         assertWarehouseAccess(warehouse.getId());
         lockActiveWarehouseForInventoryTransition(warehouse.getId(), "Kho xuat khong ton tai", "Kho xuat khong hoat dong");
@@ -231,7 +260,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         validateItems(request.items());
         warehouseInventoryService.assertSufficientAvailability(warehouse.getId(), request.items(), request.outboundDate());
 
-        warehouseOutbound.setCode(trim(request.code()));
+        warehouseOutbound.setCode(trim(resolvedCode));
         warehouseOutbound.setOutboundDate(request.outboundDate());
         warehouseOutbound.setWarehouseId(warehouse.getId());
         warehouseOutbound.setWarehouseName(warehouse.getName());
@@ -254,12 +283,34 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
             item.setItemCode(normalizeNullable(itemRequest.itemCode()));
             item.setItemName(trim(itemRequest.itemName()));
             item.setQuantity(itemRequest.quantity().stripTrailingZeros());
+            item.setUnitPrice(itemRequest.unitPrice() != null ? itemRequest.unitPrice().stripTrailingZeros() : BigDecimal.ZERO);
+            item.setLineTotal(item.getQuantity().multiply(item.getUnitPrice()).stripTrailingZeros());
             item.setUnit(trim(itemRequest.unit()));
             item.setBatchNumber(trim(itemRequest.batchNumber()));
             item.setExpiryDate(itemRequest.expiryDate());
             item.setNote(trim(itemRequest.note()));
             warehouseOutbound.addItem(item);
         }
+    }
+
+    private String generateOutboundCode() {
+        String prefix = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String maxCode = warehouseOutboundRepository.findMaxCodeByPrefix(prefix);
+        int nextSeq = 1;
+        if (maxCode != null && maxCode.length() > prefix.length()) {
+            try {
+                String seqStr = maxCode.substring(prefix.length());
+                nextSeq = Integer.parseInt(seqStr) + 1;
+            } catch (NumberFormatException e) {
+                // ignore
+            }
+        }
+        String candidateCode = prefix + String.format("%04d", nextSeq);
+        while (warehouseOutboundRepository.existsByCodeIgnoreCase(candidateCode)) {
+            nextSeq++;
+            candidateCode = prefix + String.format("%04d", nextSeq);
+        }
+        return candidateCode;
     }
 
     private void validateItems(List<WarehouseOutboundUpsertRequest.WarehouseOutboundItemRequest> items) {
@@ -284,9 +335,6 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
     private void validateCreatePayload(WarehouseOutboundUpsertRequest payload) {
         if (payload == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thong tin phieu xuat khong duoc de trong");
-        }
-        if (isBlank(payload.code())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma phieu xuat khong duoc de trong");
         }
         if (payload.outboundDate() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngay xuat khong duoc de trong");
@@ -344,6 +392,15 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         }
     }
 
+    private void requireStatus(WarehouseOutbound warehouseOutbound, String message, WarehouseOutboundStatus... expectedStatuses) {
+        for (WarehouseOutboundStatus status : expectedStatuses) {
+            if (warehouseOutbound.getStatus() == status) {
+                return;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
     private WarehouseOutboundStatus parseStatus(String value) {
         try {
             return WarehouseOutboundStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
@@ -364,6 +421,11 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                 .filter(quantity -> quantity != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .stripTrailingZeros();
+        BigDecimal totalValue = warehouseOutbound.getItems().stream()
+                .map(WarehouseOutboundItem::getLineTotal)
+                .filter(lineTotal -> lineTotal != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .stripTrailingZeros();
         return new WarehouseOutboundListItemResponse(
                 warehouseOutbound.getId(),
                 warehouseOutbound.getCode(),
@@ -377,7 +439,8 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                 warehouseOutbound.getReceivedBy(),
                 warehouseOutbound.getRequestedBy(),
                 warehouseOutbound.getItems().size(),
-                totalQuantity
+                totalQuantity,
+                totalValue
         );
     }
 
@@ -393,6 +456,11 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         BigDecimal totalQuantity = warehouseOutbound.getItems().stream()
                 .map(WarehouseOutboundItem::getQuantity)
                 .filter(quantity -> quantity != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .stripTrailingZeros();
+        BigDecimal totalValue = warehouseOutbound.getItems().stream()
+                .map(WarehouseOutboundItem::getLineTotal)
+                .filter(lineTotal -> lineTotal != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .stripTrailingZeros();
         return new WarehouseOutboundDetailResponse(
@@ -412,6 +480,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                 warehouseOutbound.getRejectionReason(),
                 warehouseOutbound.getItems().size(),
                 totalQuantity,
+                totalValue,
                 warehouseOutbound.getItems().stream()
                         .sorted((left, right) -> left.getId().compareTo(right.getId()))
                         .map(item -> new WarehouseOutboundDetailResponse.WarehouseOutboundItemDetailResponse(
@@ -421,6 +490,8 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                                 item.getItemName(),
                                 item.getUnit(),
                                 item.getQuantity(),
+                                item.getUnitPrice() != null ? item.getUnitPrice().stripTrailingZeros() : BigDecimal.ZERO,
+                                item.getLineTotal() != null ? item.getLineTotal().stripTrailingZeros() : BigDecimal.ZERO,
                                 item.getBatchNumber(),
                                 item.getExpiryDate(),
                                 item.getNote()
@@ -435,6 +506,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
                 item.getItemCode(),
                 item.getItemName(),
                 item.getQuantity(),
+                item.getUnitPrice(),
                 item.getUnit(),
                 item.getBatchNumber(),
                 item.getExpiryDate(),

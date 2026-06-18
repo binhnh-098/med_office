@@ -18,6 +18,7 @@ public interface WarehouseOutboundService {
             String keyword,
             String status,
             String warehouseId,
+            String destinationWarehouseId,
             LocalDate fromDate,
             LocalDate toDate
     );
@@ -35,4 +36,6 @@ public interface WarehouseOutboundService {
     WarehouseOutboundMutationResponse reject(String id, WarehouseOutboundRejectRequest request);
 
     WarehouseOutboundMutationResponse complete(String id);
+
+    void delete(String id);
 }

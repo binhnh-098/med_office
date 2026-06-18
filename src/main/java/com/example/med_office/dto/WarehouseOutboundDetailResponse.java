@@ -23,6 +23,7 @@ public record WarehouseOutboundDetailResponse(
         String rejectionReason,
         int itemCount,
         BigDecimal totalQuantity,
+        BigDecimal totalValue,
         List<WarehouseOutboundItemDetailResponse> items
 ) {
     public record WarehouseOutboundItemDetailResponse(
@@ -32,6 +33,8 @@ public record WarehouseOutboundDetailResponse(
             String itemName,
             String unit,
             BigDecimal quantity,
+            BigDecimal unitPrice,
+            BigDecimal lineTotal,
             String batchNumber,
             LocalDate expiryDate,
             String note

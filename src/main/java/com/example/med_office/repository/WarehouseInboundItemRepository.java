@@ -34,7 +34,8 @@ public interface WarehouseInboundItemRepository extends JpaRepository<WarehouseI
                 i.batchNumber,
                 i.expiryDate,
                 i.unit,
-                sum(i.quantity)
+                sum(i.quantity),
+                max(i.unitPrice)
             )
             from WarehouseInboundItem i
             join i.warehouseInbound inbound
@@ -49,6 +50,38 @@ public interface WarehouseInboundItemRepository extends JpaRepository<WarehouseI
                      i.batchNumber, i.expiryDate, i.unit
             """)
     List<WarehouseInventoryAggregateRow> summarizeQuantities(
+            @Param("statuses") Collection<WarehouseInboundStatus> statuses,
+            @Param("warehouseIds") Collection<String> warehouseIds,
+            @Param("warehouseId") String warehouseId,
+            @Param("keyword") String keyword
+    );
+
+    @Query("""
+            select new com.example.med_office.dto.WarehouseInventoryAggregateRow(
+                i.itemId,
+                i.itemCode,
+                i.itemName,
+                inbound.sourceWarehouseId,
+                inbound.sourceWarehouseName,
+                i.batchNumber,
+                i.expiryDate,
+                i.unit,
+                sum(i.quantity),
+                max(i.unitPrice)
+            )
+            from WarehouseInboundItem i
+            join i.warehouseInbound inbound
+            where inbound.status in :statuses
+              and inbound.sourceWarehouseId in :warehouseIds
+              and (:warehouseId is null or inbound.sourceWarehouseId = :warehouseId)
+              and (:keyword is null
+                or lower(i.itemCode) like lower(concat('%', :keyword, '%'))
+                or lower(i.itemName) like lower(concat('%', :keyword, '%'))
+                or lower(i.batchNumber) like lower(concat('%', :keyword, '%')))
+            group by i.itemId, i.itemCode, i.itemName, inbound.sourceWarehouseId, inbound.sourceWarehouseName,
+                     i.batchNumber, i.expiryDate, i.unit
+            """)
+    List<WarehouseInventoryAggregateRow> summarizeTransferredOutQuantities(
             @Param("statuses") Collection<WarehouseInboundStatus> statuses,
             @Param("warehouseIds") Collection<String> warehouseIds,
             @Param("warehouseId") String warehouseId,

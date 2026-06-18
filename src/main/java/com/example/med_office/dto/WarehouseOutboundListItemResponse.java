@@ -18,6 +18,7 @@ public record WarehouseOutboundListItemResponse(
         String receivedBy,
         String requestedBy,
         int itemCount,
-        BigDecimal totalQuantity
+        BigDecimal totalQuantity,
+        BigDecimal totalValue
 ) {
 }

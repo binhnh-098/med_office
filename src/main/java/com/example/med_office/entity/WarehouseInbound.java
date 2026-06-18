@@ -51,6 +51,12 @@ public class WarehouseInbound {
     @Column(name = "supplier_name", length = 255)
     private String supplierName;
 
+    @Column(name = "source_warehouse_id", length = 36)
+    private String sourceWarehouseId;
+
+    @Column(name = "source_warehouse_name", length = 255)
+    private String sourceWarehouseName;
+
     @Column(name = "invoice_number", length = 100)
     private String invoiceNumber;
 

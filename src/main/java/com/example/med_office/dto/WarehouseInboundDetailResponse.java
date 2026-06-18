@@ -15,6 +15,8 @@ public record WarehouseInboundDetailResponse(
         String warehouseName,
         String supplierId,
         String supplierName,
+        String sourceWarehouseId,
+        String sourceWarehouseName,
         String invoiceNumber,
         String sourceDocument,
         String deliveryBy,

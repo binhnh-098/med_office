@@ -15,6 +15,7 @@ public record WarehouseInventoryListItemResponse(
         BigDecimal availableQuantity,
         BigDecimal reservedQuantity,
         BigDecimal totalQuantity,
-        BigDecimal minQuantity
+        BigDecimal minQuantity,
+        BigDecimal unitPrice
 ) {
 }

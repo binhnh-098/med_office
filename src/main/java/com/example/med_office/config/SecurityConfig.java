@@ -73,6 +73,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/inventory-items", "/api/inventory-items/**")
                         .hasAuthority(PermissionCatalog.WAREHOUSE_VIEW)
                         .requestMatchers("/api/admin/**").hasAuthority(PermissionCatalog.SYSTEM_PERMISSIONS_MANAGE)
+                        .requestMatchers("/api/leave-requests/balance").authenticated()
+                        .requestMatchers("/api/leave-requests", "/api/leave-requests/**")
+                        .hasAuthority(PermissionCatalog.EMPLOYEES_LEAVE_VIEW)
                         .requestMatchers("/api/chuc-vu/**").hasAuthority(PermissionCatalog.EMPLOYEES_ORGANIZATION_VIEW)
                         .requestMatchers(HttpMethod.GET, "/api/chuyen-khoa", "/api/chuyen-khoa/**")
                         .hasAuthority(PermissionCatalog.EMPLOYEES_ORGANIZATION_VIEW)
@@ -83,7 +86,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/chuyen-khoa/**")
                         .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.GET, "/api/ho-so-nhan-vien", "/api/ho-so-nhan-vien/**")
-                        .hasAuthority(PermissionCatalog.EMPLOYEES_DIRECTORY_VIEW)
+                        .hasAnyAuthority(
+                                PermissionCatalog.EMPLOYEES_DIRECTORY_VIEW,
+                                PermissionCatalog.WAREHOUSE_VIEW,
+                                PermissionCatalog.DOCUMENTS_INCOMING_VIEW,
+                                PermissionCatalog.DOCUMENTS_OUTGOING_VIEW
+                        )
                         .requestMatchers(HttpMethod.POST, "/api/ho-so-nhan-vien", "/api/ho-so-nhan-vien/**")
                         .hasAnyAuthority(PermissionCatalog.EMPLOYEES_CREATE, PermissionCatalog.EMPLOYEES_DIRECTORY_UPDATE)
                         .requestMatchers(HttpMethod.PUT, "/api/ho-so-nhan-vien/**")

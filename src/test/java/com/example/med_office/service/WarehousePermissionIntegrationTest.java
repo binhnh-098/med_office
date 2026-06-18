@@ -155,6 +155,8 @@ class WarehousePermissionIntegrationTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 List.of(itemRequest("ITEM-01", "VT001")),
                 WarehouseInboundAction.SAVE_DRAFT
         );
@@ -167,6 +169,8 @@ class WarehousePermissionIntegrationTest {
                 inboundLe.getCode(),
                 LocalDate.of(2026, 6, 4),
                 warehouseLe.getId(),
+                null,
+                null,
                 null,
                 null,
                 null,

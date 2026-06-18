@@ -22,7 +22,8 @@ public interface WarehouseOutboundItemRepository extends JpaRepository<Warehouse
                 i.batchNumber,
                 i.expiryDate,
                 i.unit,
-                sum(i.quantity)
+                sum(i.quantity),
+                max(i.unitPrice)
             )
             from WarehouseOutboundItem i
             join i.warehouseOutbound outbound
@@ -53,7 +54,8 @@ public interface WarehouseOutboundItemRepository extends JpaRepository<Warehouse
                 i.batchNumber,
                 i.expiryDate,
                 i.unit,
-                sum(i.quantity)
+                sum(i.quantity),
+                max(i.unitPrice)
             )
             from WarehouseOutboundItem i
             join i.warehouseOutbound outbound

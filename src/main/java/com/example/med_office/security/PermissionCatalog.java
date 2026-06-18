@@ -38,6 +38,8 @@ public final class PermissionCatalog {
     public static final String CATALOGS_VIEW = "catalogs.view";
     public static final String WAREHOUSE_VIEW = "warehouse.view";
     public static final String WAREHOUSE_MANAGE = "warehouse.manage";
+    public static final String EMPLOYEES_LEAVE_VIEW = "employees.leave.view";
+    public static final String EMPLOYEES_LEAVE_MANAGE = "employees.leave.manage";
 
     private static final List<PermissionDefinition> DEFINITIONS = List.of(
             permission(OVERVIEW_DASHBOARD_VIEW, "overview", "Tong quan", "Xem dashboard"),
@@ -73,7 +75,9 @@ public final class PermissionCatalog {
             permission(SYSTEM_ACCOUNTS_UPDATE, "system", "He thong", "Cap nhat tai khoan"),
             permission(CATALOGS_VIEW, "catalogs", "Danh muc", "Xem danh muc"),
             permission(WAREHOUSE_VIEW, "warehouse", "Module kho", "Xem kho"),
-            permission(WAREHOUSE_MANAGE, "warehouse", "Module kho", "Quan ly kho")
+            permission(WAREHOUSE_MANAGE, "warehouse", "Module kho", "Quan ly kho"),
+            permission(EMPLOYEES_LEAVE_VIEW, "human-resources", "Module nhan su", "Xem danh sach nghi phep"),
+            permission(EMPLOYEES_LEAVE_MANAGE, "human-resources", "Module nhan su", "Phe duyet nghi phep")
     );
 
     private PermissionCatalog() {

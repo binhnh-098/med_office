@@ -29,10 +29,11 @@ public class ApiExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingRequestBody() {
+    public ResponseEntity<ApiResponse<Object>> handleMissingRequestBody(HttpMessageNotReadableException ex) {
+        log.error("HTTP message not readable: ", ex);
         return ResponseEntity.badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Request body is missing or invalid"));
+                .body(ApiResponse.error(ApiCode.BAD_REQUEST, "Request body is missing or invalid: " + ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

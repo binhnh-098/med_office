@@ -9,6 +9,7 @@ import com.example.med_office.dto.WarehouseInboundMutationResponse;
 import com.example.med_office.dto.WarehouseInboundPageResponse;
 import com.example.med_office.dto.WarehouseInboundRejectRequest;
 import com.example.med_office.dto.WarehouseInboundUpsertRequest;
+import com.example.med_office.dto.WarehouseOutboundUpsertRequest;
 import com.example.med_office.entity.NhaCungCap;
 import com.example.med_office.entity.Warehouse;
 import com.example.med_office.entity.WarehouseInbound;
@@ -44,19 +45,22 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     private final NhaCungCapRepository nhaCungCapRepository;
     private final WarehousePermissionScopeService warehousePermissionScopeService;
     private final WarehouseInventoryMinQuantityService warehouseInventoryMinQuantityService;
+    private final WarehouseInventoryService warehouseInventoryService;
 
     public WarehouseInboundServiceImpl(
             WarehouseInboundRepository warehouseInboundRepository,
             WarehouseRepository warehouseRepository,
             NhaCungCapRepository nhaCungCapRepository,
             WarehousePermissionScopeService warehousePermissionScopeService,
-            WarehouseInventoryMinQuantityService warehouseInventoryMinQuantityService
+            WarehouseInventoryMinQuantityService warehouseInventoryMinQuantityService,
+            WarehouseInventoryService warehouseInventoryService
     ) {
         this.warehouseInboundRepository = warehouseInboundRepository;
         this.warehouseRepository = warehouseRepository;
         this.nhaCungCapRepository = nhaCungCapRepository;
         this.warehousePermissionScopeService = warehousePermissionScopeService;
         this.warehouseInventoryMinQuantityService = warehouseInventoryMinQuantityService;
+        this.warehouseInventoryService = warehouseInventoryService;
     }
 
     @Override
@@ -76,8 +80,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         }
         Page<WarehouseInbound> result = warehouseInboundRepository.findAll(
                 buildSpecification(keyword, status, warehouseId, fromDate, toDate, resolveWarehouseScope()),
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "receiptDate", "createdAt", "id"))
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"))
         );
+
 
         return new WarehouseInboundPageResponse(
                 result.getContent().stream().map(this::toListItemResponse).toList(),
@@ -99,10 +104,16 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     public WarehouseInboundMutationResponse create(WarehouseInboundCreateRequest request) {
         WarehouseInboundUpsertRequest payload = request.toUpsertRequest();
         validateCreatePayload(payload);
-        validateUniqueCode(payload.code(), null);
+
+        String resolvedCode = payload.code();
+        if (resolvedCode == null || resolvedCode.trim().isEmpty() || "(Tự động)".equalsIgnoreCase(resolvedCode.trim())) {
+            resolvedCode = generateInboundCode();
+        }
+
+        validateUniqueCode(resolvedCode, null);
 
         WarehouseInbound warehouseInbound = new WarehouseInbound();
-        applyPayload(warehouseInbound, payload, request.action());
+        applyPayload(warehouseInbound, payload, resolvedCode, request.action());
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
     }
@@ -112,18 +123,32 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
     public WarehouseInboundMutationResponse updateDraft(String id, WarehouseInboundUpsertRequest request) {
         WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.DRAFT, "Chi duoc cap nhat phieu nhap kho o trang thai DRAFT");
-        validateUniqueCode(request.code(), id);
 
-        applyPayload(warehouseInbound, request, WarehouseInboundAction.SAVE_DRAFT);
+        String resolvedCode = request.code();
+        if (resolvedCode == null || resolvedCode.trim().isEmpty() || "(Tự động)".equalsIgnoreCase(resolvedCode.trim())) {
+            resolvedCode = warehouseInbound.getCode();
+        }
+
+        validateUniqueCode(resolvedCode, id);
+
+        applyPayload(warehouseInbound, request, resolvedCode, WarehouseInboundAction.SAVE_DRAFT);
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
     }
+
 
     @Override
     @Transactional
     public WarehouseInboundMutationResponse submit(String id) {
         WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.DRAFT, "Phieu nhap kho khong o trang thai hop le de gui duyet");
+        if (warehouseInbound.getSourceWarehouseId() != null) {
+            warehouseInventoryService.assertSufficientAvailability(
+                    warehouseInbound.getSourceWarehouseId(),
+                    toOutboundItemRequests(warehouseInbound),
+                    warehouseInbound.getReceiptDate()
+            );
+        }
         warehouseInbound.setStatus(WarehouseInboundStatus.PENDING_APPROVAL);
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
@@ -135,11 +160,36 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         WarehouseInbound warehouseInbound = requireAccessibleInboundForUpdate(id);
         requireStatus(warehouseInbound, WarehouseInboundStatus.PENDING_APPROVAL, "Chi duyet duoc phieu nhap kho o trang thai PENDING_APPROVAL");
         lockWarehouseForInventoryTransition(warehouseInbound.getWarehouseId(), "Kho nhap khong ton tai");
+        if (warehouseInbound.getSourceWarehouseId() != null) {
+            List<WarehouseOutboundUpsertRequest.WarehouseOutboundItemRequest> itemRequests = toOutboundItemRequests(warehouseInbound);
+            warehouseInventoryService.assertSufficientAvailability(
+                    warehouseInbound.getSourceWarehouseId(),
+                    itemRequests,
+                    warehouseInbound.getReceiptDate(),
+                    itemRequests
+            );
+        }
         warehouseInbound.setStatus(WarehouseInboundStatus.APPROVED);
         warehouseInbound.setApprovalNote(trim(request.note()));
         warehouseInventoryMinQuantityService.upsertFromInbound(warehouseInbound.getWarehouseId(), warehouseInbound.getItems());
         WarehouseInbound saved = warehouseInboundRepository.save(warehouseInbound);
         return toMutationResponse(saved);
+    }
+
+    private List<WarehouseOutboundUpsertRequest.WarehouseOutboundItemRequest> toOutboundItemRequests(WarehouseInbound inbound) {
+        return inbound.getItems().stream()
+                .map(item -> new WarehouseOutboundUpsertRequest.WarehouseOutboundItemRequest(
+                        item.getItemId(),
+                        item.getItemCode(),
+                        item.getItemName(),
+                        item.getQuantity(),
+                        item.getUnitPrice(),
+                        item.getUnit(),
+                        item.getBatchNumber(),
+                        item.getExpiryDate(),
+                        null
+                ))
+                .toList();
     }
 
     @Override
@@ -201,29 +251,46 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             }
 
             if (fromDate != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("receiptDate"), fromDate));
+                Instant fromInstant = fromDate.atStartOfDay(ZoneOffset.ofHours(7)).toInstant();
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), fromInstant));
             }
 
             if (toDate != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("receiptDate"), toDate));
+                Instant toInstant = toDate.plusDays(1).atStartOfDay(ZoneOffset.ofHours(7)).toInstant();
+                predicates.add(criteriaBuilder.lessThan(root.get("createdAt"), toInstant));
             }
+
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    private void applyPayload(WarehouseInbound warehouseInbound, WarehouseInboundUpsertRequest request, WarehouseInboundAction action) {
+    private void applyPayload(WarehouseInbound warehouseInbound, WarehouseInboundUpsertRequest request, String code, WarehouseInboundAction action) {
         Warehouse warehouse = requireWarehouse(request.warehouseId());
         assertWarehouseAccess(warehouse.getId());
-        NhaCungCap supplier = resolveSupplier(request.supplierId());
         validateItems(request.items());
 
-        warehouseInbound.setCode(trim(request.code()));
+        Warehouse sourceWarehouse = null;
+        if (request.sourceWarehouseId() != null && !request.sourceWarehouseId().isBlank()) {
+            sourceWarehouse = requireWarehouse(request.sourceWarehouseId());
+            if (sourceWarehouse.getId().equals(warehouse.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kho nhap va kho xuat khong duoc trung nhau");
+            }
+        }
+
+        NhaCungCap supplier = null;
+        if (sourceWarehouse == null) {
+            supplier = resolveSupplier(request.supplierId());
+        }
+
+        warehouseInbound.setCode(code);
         warehouseInbound.setReceiptDate(request.receiptDate());
         warehouseInbound.setWarehouseId(warehouse.getId());
         warehouseInbound.setWarehouseName(warehouse.getName());
-        warehouseInbound.setSupplierId(supplier != null ? supplier.getId() : normalizeNullable(request.supplierId()));
-        warehouseInbound.setSupplierName(supplier != null ? supplier.getTenNhaCungCap() : trim(request.supplierName()));
+        warehouseInbound.setSourceWarehouseId(sourceWarehouse != null ? sourceWarehouse.getId() : null);
+        warehouseInbound.setSourceWarehouseName(sourceWarehouse != null ? sourceWarehouse.getName() : null);
+        warehouseInbound.setSupplierId(supplier != null ? supplier.getId() : (sourceWarehouse == null ? normalizeNullable(request.supplierId()) : null));
+        warehouseInbound.setSupplierName(supplier != null ? supplier.getTenNhaCungCap() : (sourceWarehouse == null ? trim(request.supplierName()) : null));
         warehouseInbound.setInvoiceNumber(trim(request.invoiceNumber()));
         warehouseInbound.setSourceDocument(trim(request.sourceDocument()));
         warehouseInbound.setDeliveryBy(trim(request.deliveryBy()));
@@ -263,6 +330,9 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             if (isBlank(item.itemName())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten vat tu o dong thu " + (index + 1) + " khong duoc de trong");
             }
+            if (isBlank(item.itemCode())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma vat tu o dong thu " + (index + 1) + " khong duoc de trong");
+            }
             if (item.quantity() == null || item.quantity().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "So luong o dong thu " + (index + 1) + " phai lon hon 0");
             }
@@ -272,18 +342,12 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             if (item.minQuantity() != null && item.minQuantity().compareTo(BigDecimal.ZERO) < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "So ton toi thieu o dong thu " + (index + 1) + " phai lon hon hoac bang 0");
             }
-            if (isBlank(item.itemId()) && isBlank(item.itemCode())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dong vat tu thu " + (index + 1) + " phai co itemId hoac itemCode");
-            }
         }
     }
 
     private void validateCreatePayload(WarehouseInboundUpsertRequest payload) {
         if (payload == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thong tin phieu nhap khong duoc de trong");
-        }
-        if (isBlank(payload.code())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma phieu nhap khong duoc de trong");
         }
         if (payload.receiptDate() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngay nhap khong duoc de trong");
@@ -303,6 +367,7 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma phieu nhap kho da ton tai");
         }
     }
+
 
     private Warehouse requireWarehouse(String id) {
         return warehouseRepository.findById(trim(id))
@@ -365,17 +430,20 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         return new WarehouseInboundListItemResponse(
                 warehouseInbound.getId(),
                 warehouseInbound.getCode(),
-                warehouseInbound.getReceiptDate().atStartOfDay().toInstant(ZoneOffset.UTC),
+                warehouseInbound.getCreatedAt(),
                 warehouseInbound.getStatus(),
                 warehouseInbound.getWarehouseId(),
                 warehouseInbound.getWarehouseName(),
                 warehouseInbound.getSupplierId(),
                 warehouseInbound.getSupplierName(),
+                warehouseInbound.getSourceWarehouseId(),
+                warehouseInbound.getSourceWarehouseName(),
                 warehouseInbound.getItems().size(),
                 totals.totalQuantity(),
                 totals.totalValue()
         );
     }
+
 
     private WarehouseInboundDetailResponse toDetailResponse(WarehouseInbound warehouseInbound) {
         Totals totals = calculateTotals(warehouseInbound);
@@ -388,6 +456,8 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
                 warehouseInbound.getWarehouseName(),
                 warehouseInbound.getSupplierId(),
                 warehouseInbound.getSupplierName(),
+                warehouseInbound.getSourceWarehouseId(),
+                warehouseInbound.getSourceWarehouseName(),
                 warehouseInbound.getInvoiceNumber(),
                 warehouseInbound.getSourceDocument(),
                 warehouseInbound.getDeliveryBy(),
@@ -470,6 +540,26 @@ public class WarehouseInboundServiceImpl implements WarehouseInboundService {
         return value == null ? null : value.trim();
     }
 
+    private String generateInboundCode() {
+        String prefix = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String maxCode = warehouseInboundRepository.findMaxCodeByPrefix(prefix);
+        int nextSeq = 1;
+        if (maxCode != null && maxCode.length() > prefix.length()) {
+            try {
+                String seqStr = maxCode.substring(prefix.length());
+                nextSeq = Integer.parseInt(seqStr) + 1;
+            } catch (NumberFormatException e) {
+            }
+        }
+        String candidateCode = prefix + String.format("%04d", nextSeq);
+        while (warehouseInboundRepository.existsByCodeIgnoreCase(candidateCode)) {
+            nextSeq++;
+            candidateCode = prefix + String.format("%04d", nextSeq);
+        }
+        return candidateCode;
+    }
+
     private record Totals(BigDecimal totalQuantity, BigDecimal totalValue) {
     }
 }
+

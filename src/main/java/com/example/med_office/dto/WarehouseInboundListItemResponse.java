@@ -14,6 +14,8 @@ public record WarehouseInboundListItemResponse(
         String warehouseName,
         String supplierId,
         String supplierName,
+        String sourceWarehouseId,
+        String sourceWarehouseName,
         int itemCount,
         BigDecimal totalQuantity,
         BigDecimal totalValue

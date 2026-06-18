@@ -135,7 +135,7 @@ class WarehouseOutboundInventoryIntegrationTest {
     void managedUserOnlySeesManagedOutboundsAndInventories() {
         authenticate("manager.kt", "ROLE_USER");
 
-        WarehouseOutboundPageResponse outboundPage = warehouseOutboundService.findAll(0, 20, null, null, null, null, null);
+        WarehouseOutboundPageResponse outboundPage = warehouseOutboundService.findAll(0, 20, null, null, null, null, null, null);
         WarehouseInventoryPageResponse inventoryPage = warehouseInventoryService.findAll(0, 20, null, null);
 
         assertThat(outboundPage.content())
@@ -211,7 +211,7 @@ class WarehouseOutboundInventoryIntegrationTest {
     void adminSeesAllOutboundsAndInventories() {
         authenticate("admin.root", "ROLE_ADMIN");
 
-        WarehouseOutboundPageResponse outboundPage = warehouseOutboundService.findAll(0, 20, null, null, null, null, null);
+        WarehouseOutboundPageResponse outboundPage = warehouseOutboundService.findAll(0, 20, null, null, null, null, null, null);
         WarehouseInventoryPageResponse inventoryPage = warehouseInventoryService.findAll(0, 20, null, null);
 
         assertThat(outboundPage.content()).hasSize(4);
@@ -311,6 +311,51 @@ class WarehouseOutboundInventoryIntegrationTest {
 
         WarehouseInventoryPageResponse inventoryPage = warehouseInventoryService.findAll(0, 20, null, warehouseCap.getId());
         assertThat(inventoryPage.content()).isEmpty();
+    }
+
+    @Test
+    void createOutboundWithBlankCodeGeneratesAutomaticCode() {
+        authenticate("admin.root", "ROLE_ADMIN");
+
+        warehouseOutboundItemRepository.deleteAllInBatch();
+        warehouseOutboundRepository.deleteAllInBatch();
+
+        WarehouseOutboundCreateRequest createRequest1 = new WarehouseOutboundCreateRequest(
+                null,
+                "", 
+                LocalDate.now(),
+                warehouseKt.getId(),
+                warehouseLe.getId(),
+                "Khoa Le",
+                "Nguoi Nhan",
+                "Nguoi Yeu Cau",
+                "Note 1",
+                List.of(itemRequest(new BigDecimal("10"))),
+                WarehouseOutboundAction.SAVE_DRAFT
+        );
+
+        WarehouseOutboundMutationResponse response1 = warehouseOutboundService.create(createRequest1);
+        String prefix = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String expectedCode1 = prefix + "0001";
+        assertThat(response1.code()).isEqualTo(expectedCode1);
+
+        WarehouseOutboundCreateRequest createRequest2 = new WarehouseOutboundCreateRequest(
+                null,
+                "(Tự động)", 
+                LocalDate.now(),
+                warehouseKt.getId(),
+                warehouseLe.getId(),
+                "Khoa Le",
+                "Nguoi Nhan",
+                "Nguoi Yeu Cau",
+                "Note 2",
+                List.of(itemRequest(new BigDecimal("5"))),
+                WarehouseOutboundAction.SAVE_DRAFT
+        );
+
+        WarehouseOutboundMutationResponse response2 = warehouseOutboundService.create(createRequest2);
+        String expectedCode2 = prefix + "0002";
+        assertThat(response2.code()).isEqualTo(expectedCode2);
     }
 
     private void authenticate(String username, String authority) {
@@ -424,6 +469,7 @@ class WarehouseOutboundInventoryIntegrationTest {
                 "VT001",
                 "Gang tay",
                 quantity,
+                BigDecimal.ZERO,
                 "Hop",
                 "LO001",
                 LocalDate.of(2027, 1, 1),

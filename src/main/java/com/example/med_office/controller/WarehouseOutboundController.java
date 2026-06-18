@@ -18,6 +18,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,12 +50,13 @@ public class WarehouseOutboundController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String warehouseId,
+            @RequestParam(required = false) String destinationWarehouseId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach phieu xuat kho thanh cong",
-                warehouseOutboundService.findAll(page, size, keyword, status, warehouseId, fromDate, toDate)
+                warehouseOutboundService.findAll(page, size, keyword, status, warehouseId, destinationWarehouseId, fromDate, toDate)
         ));
     }
 
@@ -129,6 +131,16 @@ public class WarehouseOutboundController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Hoan tat xuat kho thanh cong",
                 warehouseOutboundService.complete(id)
+        ));
+    }
+
+    @Operation(summary = "Xoa phieu xuat kho nhap")
+    @DeleteMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
+        warehouseOutboundService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Xoa phieu xuat kho thanh cong",
+                null
         ));
     }
 }

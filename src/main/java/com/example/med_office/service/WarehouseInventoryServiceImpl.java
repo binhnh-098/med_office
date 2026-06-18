@@ -33,6 +33,10 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
             WarehouseInboundStatus.COMPLETED
     );
 
+    private static final List<WarehouseInboundStatus> RESERVED_INBOUND_STATUSES = List.of(
+            WarehouseInboundStatus.PENDING_APPROVAL
+    );
+
     private static final List<WarehouseOutboundStatus> EFFECTIVE_OUTBOUND_STATUSES = List.of(
             WarehouseOutboundStatus.APPROVED,
             WarehouseOutboundStatus.COMPLETED
@@ -83,7 +87,9 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
                 warehouseInboundItemRepository.summarizeQuantities(EFFECTIVE_INBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword),
                 warehouseOutboundItemRepository.summarizeTransferredInQuantities(EFFECTIVE_TRANSFER_INBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword),
                 warehouseOutboundItemRepository.summarizeQuantities(EFFECTIVE_OUTBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword),
-                warehouseOutboundItemRepository.summarizeQuantities(RESERVED_OUTBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword)
+                warehouseOutboundItemRepository.summarizeQuantities(RESERVED_OUTBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword),
+                warehouseInboundItemRepository.summarizeTransferredOutQuantities(EFFECTIVE_INBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword),
+                warehouseInboundItemRepository.summarizeTransferredOutQuantities(RESERVED_INBOUND_STATUSES, allowedWarehouseIds, normalizedWarehouseId, normalizedKeyword)
         );
 
         int fromIndex = Math.min(page * size, mergedItems.size());
@@ -124,8 +130,14 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
         Map<InventoryKey, BigDecimal> completedOutboundMap = toQuantityMap(
                 warehouseOutboundItemRepository.summarizeQuantities(EFFECTIVE_OUTBOUND_STATUSES, warehouseIds, normalizedWarehouseId, null)
         );
+        Map<InventoryKey, BigDecimal> completedTransferOutFromInboundMap = toQuantityMap(
+                warehouseInboundItemRepository.summarizeTransferredOutQuantities(EFFECTIVE_INBOUND_STATUSES, warehouseIds, normalizedWarehouseId, null)
+        );
         Map<InventoryKey, BigDecimal> reservedOutboundMap = toQuantityMap(
                 warehouseOutboundItemRepository.summarizeQuantities(RESERVED_OUTBOUND_STATUSES, warehouseIds, normalizedWarehouseId, null)
+        );
+        Map<InventoryKey, BigDecimal> reservedTransferOutFromInboundMap = toQuantityMap(
+                warehouseInboundItemRepository.summarizeTransferredOutQuantities(RESERVED_INBOUND_STATUSES, warehouseIds, normalizedWarehouseId, null)
         );
         Map<InventoryKey, BigDecimal> requestedQuantityMap = toRequestQuantityMap(normalizedWarehouseId, items);
         Map<InventoryKey, BigDecimal> releasedReservedMap = toRequestQuantityMap(normalizedWarehouseId, releasedReservedItems);
@@ -135,8 +147,10 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
             InventoryKey key = requestedEntry.getKey();
             BigDecimal inboundQuantity = completedInboundMap.getOrDefault(key, BigDecimal.ZERO);
             BigDecimal transferInboundQuantity = completedTransferInboundMap.getOrDefault(key, BigDecimal.ZERO);
-            BigDecimal completedOutboundQuantity = completedOutboundMap.getOrDefault(key, BigDecimal.ZERO);
-            BigDecimal reservedQuantity = reservedOutboundMap.getOrDefault(key, BigDecimal.ZERO);
+            BigDecimal completedOutboundQuantity = completedOutboundMap.getOrDefault(key, BigDecimal.ZERO)
+                    .add(completedTransferOutFromInboundMap.getOrDefault(key, BigDecimal.ZERO));
+            BigDecimal reservedQuantity = reservedOutboundMap.getOrDefault(key, BigDecimal.ZERO)
+                    .add(reservedTransferOutFromInboundMap.getOrDefault(key, BigDecimal.ZERO));
             BigDecimal releasedReservedQuantity = releasedReservedMap.getOrDefault(key, BigDecimal.ZERO);
             BigDecimal availableQuantity = inboundQuantity
                     .add(transferInboundQuantity)
@@ -203,13 +217,17 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
             List<WarehouseInventoryAggregateRow> inboundRows,
             List<WarehouseInventoryAggregateRow> transferInboundRows,
             List<WarehouseInventoryAggregateRow> completedOutboundRows,
-            List<WarehouseInventoryAggregateRow> reservedOutboundRows
+            List<WarehouseInventoryAggregateRow> reservedOutboundRows,
+            List<WarehouseInventoryAggregateRow> completedTransferOutInboundRows,
+            List<WarehouseInventoryAggregateRow> reservedTransferOutInboundRows
     ) {
         Map<InventoryKey, InventoryAccumulator> accumulatorByKey = new LinkedHashMap<>();
         accumulateRows(accumulatorByKey, inboundRows, QuantityType.INBOUND);
         accumulateRows(accumulatorByKey, transferInboundRows, QuantityType.TRANSFER_INBOUND);
         accumulateRows(accumulatorByKey, completedOutboundRows, QuantityType.COMPLETED_OUTBOUND);
+        accumulateRows(accumulatorByKey, completedTransferOutInboundRows, QuantityType.COMPLETED_OUTBOUND);
         accumulateRows(accumulatorByKey, reservedOutboundRows, QuantityType.RESERVED_OUTBOUND);
+        accumulateRows(accumulatorByKey, reservedTransferOutInboundRows, QuantityType.RESERVED_OUTBOUND);
         Map<String, BigDecimal> minQuantityByKey = warehouseInventoryMinQuantityService.getMinQuantitiesByInventoryKeys(
                 accumulatorByKey.keySet().stream()
                         .map(InventoryKey::stableId)
@@ -237,7 +255,8 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
                     strip(availableQuantity),
                     strip(reservedQuantity),
                     strip(totalQuantity),
-                    strip(minQuantityByKey.getOrDefault(entry.getKey().stableId(), BigDecimal.ZERO))
+                    strip(minQuantityByKey.getOrDefault(entry.getKey().stableId(), BigDecimal.ZERO)),
+                    strip(accumulator.unitPrice)
             ));
         }
 
@@ -259,6 +278,9 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
             InventoryKey key = InventoryKey.fromRow(row);
             InventoryAccumulator accumulator = accumulatorByKey.computeIfAbsent(key, ignored -> new InventoryAccumulator(row));
             accumulator.addQuantity(quantityType, defaultDecimal(row.quantity()));
+            if (row.unitPrice() != null) {
+                accumulator.updateUnitPrice(row.unitPrice());
+            }
         }
     }
 
@@ -332,6 +354,7 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
         private BigDecimal inboundQuantity = BigDecimal.ZERO;
         private BigDecimal completedOutboundQuantity = BigDecimal.ZERO;
         private BigDecimal reservedQuantity = BigDecimal.ZERO;
+        private BigDecimal unitPrice = BigDecimal.ZERO;
 
         private InventoryAccumulator(WarehouseInventoryAggregateRow row) {
             this.itemCode = row.itemCode();
@@ -341,6 +364,7 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
             this.batchNumber = row.batchNumber();
             this.expiryDate = row.expiryDate();
             this.unit = row.unit();
+            this.unitPrice = row.unitPrice() != null ? row.unitPrice() : BigDecimal.ZERO;
         }
 
         private void addQuantity(QuantityType quantityType, BigDecimal quantity) {
@@ -348,6 +372,12 @@ public class WarehouseInventoryServiceImpl implements WarehouseInventoryService 
                 case INBOUND, TRANSFER_INBOUND -> inboundQuantity = inboundQuantity.add(quantity);
                 case COMPLETED_OUTBOUND -> completedOutboundQuantity = completedOutboundQuantity.add(quantity);
                 case RESERVED_OUTBOUND -> reservedQuantity = reservedQuantity.add(quantity);
+            }
+        }
+
+        private void updateUnitPrice(BigDecimal price) {
+            if (price != null && price.compareTo(this.unitPrice) > 0) {
+                this.unitPrice = price;
             }
         }
     }

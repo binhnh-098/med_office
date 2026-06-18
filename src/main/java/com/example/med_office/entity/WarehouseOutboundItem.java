@@ -44,6 +44,12 @@ public class WarehouseOutboundItem {
     @Column(name = "quantity", nullable = false, precision = 18, scale = 2)
     private BigDecimal quantity;
 
+    @Column(name = "unit_price", precision = 18, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "line_total", precision = 18, scale = 2)
+    private BigDecimal lineTotal;
+
     @Column(name = "batch_number", length = 100)
     private String batchNumber;
 

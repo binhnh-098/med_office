@@ -14,7 +14,6 @@ import java.util.List;
 
 public record WarehouseOutboundUpsertRequest(
         @Schema(example = "PXK-2026-001")
-        @NotBlank(message = "Ma phieu xuat khong duoc de trong")
         @Size(max = 50, message = "Ma phieu xuat khong duoc vuot qua 50 ky tu")
         String code,
 
@@ -57,6 +56,8 @@ public record WarehouseOutboundUpsertRequest(
             @NotNull(message = "So luong khong duoc de trong")
             @DecimalMin(value = "0.01", message = "So luong phai lon hon 0")
             BigDecimal quantity,
+
+            BigDecimal unitPrice,
 
             @Size(max = 100, message = "Don vi tinh khong duoc vuot qua 100 ky tu")
             String unit,

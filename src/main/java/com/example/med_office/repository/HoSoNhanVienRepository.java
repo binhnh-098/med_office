@@ -27,6 +27,10 @@ public interface HoSoNhanVienRepository extends JpaRepository<HoSoNhanVien, Stri
 
     List<HoSoNhanVien> findByNguoiDungIdIn(Collection<String> nguoiDungIds);
 
+    boolean existsByDirectManagerId(String directManagerId);
+
+    List<HoSoNhanVien> findByDirectManagerId(String directManagerId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select hoSoNhanVien from HoSoNhanVien hoSoNhanVien where hoSoNhanVien.id = :id")
     Optional<HoSoNhanVien> findByIdForUpdate(@Param("id") String id);

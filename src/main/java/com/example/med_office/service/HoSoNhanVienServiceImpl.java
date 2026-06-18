@@ -291,7 +291,7 @@ public class HoSoNhanVienServiceImpl implements HoSoNhanVienService {
     public List<HoSoNhanVienOptionResponse> getDirectManagerOptions(String keyword, String excludeId) {
         String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
         String normalizedExcludeId = excludeId == null || excludeId.isBlank() ? null : excludeId.trim();
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(0, 1000);
         return hoSoNhanVienRepository.findDirectManagerOptions(normalizedKeyword, normalizedExcludeId, pageable).stream()
                 .map(this::toOptionResponse)
                 .toList();

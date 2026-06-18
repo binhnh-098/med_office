@@ -114,6 +114,12 @@ public class HoSoNhanVien {
     @Column(name = "dang_hoat_dong")
     private Boolean active;
 
+    @Column(name = "tong_nghi_phep_nam")
+    private Double annualLeaveTotal;
+
+    @Column(name = "da_nghi_phep_nam")
+    private Double annualLeaveUsed;
+
     @Column(name = "ghi_chu", length = 2000)
     private String note;
 
@@ -140,6 +146,12 @@ public class HoSoNhanVien {
         }
         if (active == null) {
             active = true;
+        }
+        if (annualLeaveTotal == null) {
+            annualLeaveTotal = 12.0;
+        }
+        if (annualLeaveUsed == null) {
+            annualLeaveUsed = 0.0;
         }
     }
 

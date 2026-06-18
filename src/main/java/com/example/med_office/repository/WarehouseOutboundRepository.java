@@ -19,4 +19,7 @@ public interface WarehouseOutboundRepository extends JpaRepository<WarehouseOutb
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select outbound from WarehouseOutbound outbound where outbound.id = :id")
     Optional<WarehouseOutbound> findByIdForUpdate(@Param("id") String id);
+
+    @Query("select max(o.code) from WarehouseOutbound o where o.code like :prefix%")
+    String findMaxCodeByPrefix(@Param("prefix") String prefix);
 }
