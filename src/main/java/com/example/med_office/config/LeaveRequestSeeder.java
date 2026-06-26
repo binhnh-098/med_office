@@ -39,8 +39,8 @@ public class LeaveRequestSeeder implements CommandLineRunner {
         System.out.println("=== Running LeaveRequestSeeder ===");
 
         // 1. Sync Leave catalog definitions to permissions table
-        syncPermission(PermissionCatalog.EMPLOYEES_LEAVE_VIEW, "human-resources", "Module nhan su", "Xem danh sach nghi phep");
-        syncPermission(PermissionCatalog.EMPLOYEES_LEAVE_MANAGE, "human-resources", "Module nhan su", "Phe duyet nghi phep");
+        syncPermission(PermissionCatalog.EMPLOYEES_LEAVE_VIEW, "human-resources", "Nhân sự", "Xem nghỉ phép");
+        syncPermission(PermissionCatalog.EMPLOYEES_LEAVE_MANAGE, "human-resources", "Nhân sự", "Quản lý nghỉ phép");
 
         // Get permissions from DB
         Optional<Permission> viewPermOpt = permissionRepository.findByCode(PermissionCatalog.EMPLOYEES_LEAVE_VIEW);

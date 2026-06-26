@@ -253,12 +253,38 @@ public class AccessControlServiceImpl implements AccessControlService {
 
         Map<String, Permission> existingPermissionsByCode = permissionRepository.findByCodeIn(definitionsByCode.keySet()).stream()
                 .collect(Collectors.toMap(Permission::getCode, Function.identity()));
-        List<Permission> missingPermissions = definitionsByCode.values().stream()
-                .filter(definition -> !existingPermissionsByCode.containsKey(definition.code()))
-                .map(this::newPermissionFromDefinition)
-                .toList();
-        if (!missingPermissions.isEmpty()) {
-            permissionRepository.saveAll(missingPermissions);
+        
+        List<Permission> toSave = new java.util.ArrayList<>();
+        definitionsByCode.forEach((code, definition) -> {
+            Permission existing = existingPermissionsByCode.get(code);
+            if (existing == null) {
+                toSave.add(newPermissionFromDefinition(definition));
+            } else {
+                boolean updated = false;
+                if (!definition.moduleName().equals(existing.getModuleName())) {
+                    existing.setModuleName(definition.moduleName());
+                    updated = true;
+                }
+                if (!definition.name().equals(existing.getName())) {
+                    existing.setName(definition.name());
+                    updated = true;
+                }
+                if (!definition.description().equals(existing.getDescription())) {
+                    existing.setDescription(definition.description());
+                    updated = true;
+                }
+                if (!definition.moduleCode().equals(existing.getModuleCode())) {
+                    existing.setModuleCode(definition.moduleCode());
+                    updated = true;
+                }
+                if (updated) {
+                    toSave.add(existing);
+                }
+            }
+        });
+        
+        if (!toSave.isEmpty()) {
+            permissionRepository.saveAll(toSave);
         }
     }
 

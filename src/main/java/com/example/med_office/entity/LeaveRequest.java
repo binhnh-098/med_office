@@ -62,6 +62,9 @@ public class LeaveRequest {
     @Column(name = "trang_thai", nullable = false, length = 50)
     private String status; // DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
 
+    @Column(name = "buoi_nghi", length = 50)
+    private String halfDaySession; // MORNING, AFTERNOON
+
     @Column(name = "ly_do_tu_choi", length = 1000)
     private String rejectReason;
 

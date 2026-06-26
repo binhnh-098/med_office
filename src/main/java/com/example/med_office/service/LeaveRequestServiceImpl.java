@@ -93,6 +93,12 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 }
             }
 
+            // Draft requests must belong to the current employee only
+            predicates.add(cb.or(
+                    cb.notEqual(root.get("status"), "DRAFT"),
+                    cb.equal(root.get("hoSoNhanVienId"), currentEmployee.getId())
+            ));
+
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
@@ -136,6 +142,15 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     public LeaveRequestResponse createLeaveRequest(LeaveRequestUpsertRequest request, String currentUsername) {
         HoSoNhanVien employee = getHoSoNhanVienForUsername(currentUsername);
 
+        validateLeaveRequestOverlap(
+                null,
+                employee.getId(),
+                request.startDate(),
+                request.endDate(),
+                request.totalDays(),
+                request.halfDaySession()
+        );
+
         LeaveRequest leaveRequest = new LeaveRequest();
         leaveRequest.setHoSoNhanVienId(employee.getId());
         leaveRequest.setEmployeeName(employee.getName());
@@ -146,6 +161,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         leaveRequest.setTotalDays(request.totalDays());
         leaveRequest.setReason(request.reason());
         leaveRequest.setStatus("DRAFT");
+        leaveRequest.setHalfDaySession(request.halfDaySession());
 
         if (request.approverId() != null && !request.approverId().isBlank()) {
             HoSoNhanVien approver = hoSoNhanVienRepository.findById(request.approverId())
@@ -179,6 +195,15 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ được cập nhật đơn nghỉ phép ở trạng thái Nháp hoặc Từ chối.");
         }
 
+        validateLeaveRequestOverlap(
+                id,
+                employee.getId(),
+                request.startDate(),
+                request.endDate(),
+                request.totalDays(),
+                request.halfDaySession()
+        );
+
         leaveRequest.setLeaveType(request.leaveType());
         leaveRequest.setStartDate(request.startDate());
         leaveRequest.setEndDate(request.endDate());
@@ -186,6 +211,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         leaveRequest.setReason(request.reason());
         leaveRequest.setStatus("DRAFT");
         leaveRequest.setRejectReason(null);
+        leaveRequest.setHalfDaySession(request.halfDaySession());
 
         if (request.approverId() != null && !request.approverId().isBlank()) {
             HoSoNhanVien approver = hoSoNhanVienRepository.findById(request.approverId())
@@ -226,6 +252,15 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ đơn ở trạng thái Nháp mới có thể gửi duyệt.");
         }
 
+        validateLeaveRequestOverlap(
+                id,
+                leaveRequest.getHoSoNhanVienId(),
+                leaveRequest.getStartDate(),
+                leaveRequest.getEndDate(),
+                leaveRequest.getTotalDays(),
+                leaveRequest.getHalfDaySession()
+        );
+
         leaveRequest.setStatus("PENDING_APPROVAL");
         LeaveRequest saved = leaveRequestRepository.save(leaveRequest);
         return toResponse(saved);
@@ -254,8 +289,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         if ("ANNUAL".equals(leaveRequest.getLeaveType())) {
-            double remaining = (employee.getAnnualLeaveTotal() != null ? employee.getAnnualLeaveTotal() : 12.0) -
-                    (employee.getAnnualLeaveUsed() != null ? employee.getAnnualLeaveUsed() : 0.0);
+            double total = calculateAccruedAnnualLeave(employee);
+            double remaining = total - (employee.getAnnualLeaveUsed() != null ? employee.getAnnualLeaveUsed() : 0.0);
             if (leaveRequest.getTotalDays() > remaining) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nhân viên không đủ số ngày phép năm còn lại (Còn lại: " + remaining + " ngày).");
             }
@@ -324,11 +359,30 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     @Override
     public LeaveBalanceResponse getLeaveBalance(String currentUsername) {
         HoSoNhanVien employee = getHoSoNhanVienForUsername(currentUsername);
-        double total = employee.getAnnualLeaveTotal() != null ? employee.getAnnualLeaveTotal() : 12.0;
+        double total = calculateAccruedAnnualLeave(employee);
         double used = employee.getAnnualLeaveUsed() != null ? employee.getAnnualLeaveUsed() : 0.0;
         double remaining = total - used;
         boolean hasSubordinates = hoSoNhanVienRepository.existsByDirectManagerId(employee.getId()) || leaveRequestRepository.existsByApproverId(employee.getId());
         return new LeaveBalanceResponse(total, used, remaining, hasSubordinates);
+    }
+
+    private double calculateAccruedAnnualLeave(HoSoNhanVien employee) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        int year = today.getYear();
+        int month = today.getMonthValue();
+        double accruedThisYear = month - 1.0;
+        double leftover = employee.getAnnualLeaveLeftoverLastYear() != null ? employee.getAnnualLeaveLeftoverLastYear() : 0.0;
+
+        if (month <= 3) {
+            return accruedThisYear + leftover;
+        } else {
+            Double usedInMarchRaw = leaveRequestRepository.sumApprovedAnnualLeaveDaysBeforeDate(
+                    employee.getId(),
+                    java.time.LocalDate.of(year, 3, 31)
+            );
+            double usedInMarch = usedInMarchRaw != null ? usedInMarchRaw : 0.0;
+            return accruedThisYear + Math.min(leftover, usedInMarch);
+        }
     }
 
     private HoSoNhanVien getHoSoNhanVienForUsername(String username) {
@@ -360,8 +414,63 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 request.getHandoverEmployeeName(),
                 request.getStatus(),
                 request.getRejectReason(),
+                request.getHalfDaySession(),
                 request.getCreatedAt(),
                 request.getUpdatedAt()
         );
+    }
+
+    private void validateLeaveRequestOverlap(
+            String id,
+            String employeeId,
+            java.time.LocalDate startDate,
+            java.time.LocalDate endDate,
+            Double totalDays,
+            String halfDaySession
+    ) {
+        List<LeaveRequest> overlapping = leaveRequestRepository.findOverlappingRequests(
+                employeeId,
+                startDate,
+                endDate
+        );
+
+        for (LeaveRequest exist : overlapping) {
+            if (id != null && id.equals(exist.getId())) {
+                continue;
+            }
+
+            // Case 1: Both are half-day on the same date
+            if (totalDays == 0.5 && exist.getTotalDays() == 0.5 && exist.getStartDate().equals(startDate)) {
+                if (halfDaySession != null && halfDaySession.equals(exist.getHalfDaySession())) {
+                    String sessionName = "MORNING".equals(halfDaySession) ? "buổi sáng" : "buổi chiều";
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Bạn đã có đơn nghỉ phép " + sessionName + " vào ngày " +
+                            startDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "."
+                    );
+                }
+                continue;
+            }
+
+            // Case 2: Either of them is a full day on the overlapping dates
+            java.time.LocalDate d1 = startDate;
+            while (!d1.isAfter(endDate)) {
+                if (!d1.isBefore(exist.getStartDate()) && !d1.isAfter(exist.getEndDate())) {
+                    boolean isExistFullDay = exist.getTotalDays() > 0.5 || exist.getStartDate().isBefore(exist.getEndDate());
+                    boolean isNewFullDay = totalDays > 0.5 || startDate.isBefore(endDate);
+
+                    if (isExistFullDay || isNewFullDay) {
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Thời gian xin nghỉ phép trùng khớp với đơn nghỉ phép đã có từ ngày " +
+                                exist.getStartDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                                " đến ngày " +
+                                exist.getEndDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "."
+                        );
+                    }
+                }
+                d1 = d1.plusDays(1);
+            }
+        }
     }
 }

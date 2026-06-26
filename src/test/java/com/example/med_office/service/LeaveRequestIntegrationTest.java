@@ -87,6 +87,7 @@ class LeaveRequestIntegrationTest {
         employeeProfile.setDirectManagerId(managerProfile.getId());
         employeeProfile.setAnnualLeaveTotal(12.0);
         employeeProfile.setAnnualLeaveUsed(0.0);
+        employeeProfile.setAnnualLeaveLeftoverLastYear(12.0);
         employeeProfile.setActive(true);
         employeeProfile = hoSoNhanVienRepository.save(employeeProfile);
 
@@ -131,9 +132,13 @@ class LeaveRequestIntegrationTest {
         // 1. Authenticate as employee and get initial balance
         authenticate("employee.one");
         LeaveBalanceResponse initialBalance = leaveRequestService.getLeaveBalance("employee.one");
-        assertThat(initialBalance.annualLeaveTotal()).isEqualTo(12.0);
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        double expectedTotal = today.getMonthValue() <= 3 ? (today.getMonthValue() - 1.0 + 12.0) : (today.getMonthValue() - 1.0);
+        
+        assertThat(initialBalance.annualLeaveTotal()).isEqualTo(expectedTotal);
         assertThat(initialBalance.annualLeaveUsed()).isEqualTo(0.0);
-        assertThat(initialBalance.annualLeaveRemaining()).isEqualTo(12.0);
+        assertThat(initialBalance.annualLeaveRemaining()).isEqualTo(expectedTotal);
         assertThat(initialBalance.hasSubordinates()).isFalse();
 
         // Check that manager has subordinates flag set
@@ -191,8 +196,9 @@ class LeaveRequestIntegrationTest {
         // 7. Verify balance is correctly updated
         authenticate("employee.one");
         LeaveBalanceResponse updatedBalance = leaveRequestService.getLeaveBalance("employee.one");
+
         assertThat(updatedBalance.annualLeaveUsed()).isEqualTo(2.0);
-        assertThat(updatedBalance.annualLeaveRemaining()).isEqualTo(10.0);
+        assertThat(updatedBalance.annualLeaveRemaining()).isEqualTo(expectedTotal - 2.0);
     }
 
     @Test

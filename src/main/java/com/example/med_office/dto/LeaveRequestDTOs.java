@@ -14,8 +14,21 @@ public final class LeaveRequestDTOs {
             Double totalDays,
             String reason,
             String approverId,
-            String handoverEmployeeId
-    ) {}
+            String handoverEmployeeId,
+            String halfDaySession
+    ) {
+        public LeaveRequestUpsertRequest(
+                String leaveType,
+                LocalDate startDate,
+                LocalDate endDate,
+                Double totalDays,
+                String reason,
+                String approverId,
+                String handoverEmployeeId
+        ) {
+            this(leaveType, startDate, endDate, totalDays, reason, approverId, handoverEmployeeId, null);
+        }
+    }
 
     public record LeaveRequestResponse(
             String id,
@@ -33,6 +46,7 @@ public final class LeaveRequestDTOs {
             String handoverEmployeeName,
             String status,
             String rejectReason,
+            String halfDaySession,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {}

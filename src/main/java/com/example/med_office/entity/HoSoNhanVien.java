@@ -120,6 +120,9 @@ public class HoSoNhanVien {
     @Column(name = "da_nghi_phep_nam")
     private Double annualLeaveUsed;
 
+    @Column(name = "phep_nam_ngoai_con_lai")
+    private Double annualLeaveLeftoverLastYear;
+
     @Column(name = "ghi_chu", length = 2000)
     private String note;
 
@@ -152,6 +155,9 @@ public class HoSoNhanVien {
         }
         if (annualLeaveUsed == null) {
             annualLeaveUsed = 0.0;
+        }
+        if (annualLeaveLeftoverLastYear == null) {
+            annualLeaveLeftoverLastYear = 0.0;
         }
     }
 

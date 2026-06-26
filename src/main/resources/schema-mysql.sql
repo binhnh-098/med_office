@@ -546,3 +546,227 @@ CREATE TABLE IF NOT EXISTS mon_an_bac_si (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contracts (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    ho_so_nhan_vien_id CHAR(36) NOT NULL,
+    contract_number VARCHAR(100) NOT NULL,
+    contract_type VARCHAR(100) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NULL,
+    salary DECIMAL(18, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    note VARCHAR(2000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_contracts_number (contract_number),
+    KEY idx_contracts_employee_id (ho_so_nhan_vien_id),
+    KEY idx_contracts_status (status),
+    CONSTRAINT fk_contracts_employee
+        FOREIGN KEY (ho_so_nhan_vien_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS business_trips (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    ho_so_nhan_vien_id CHAR(36) NOT NULL,
+    destination VARCHAR(255) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    purpose VARCHAR(1000) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    approver_id CHAR(36) NULL,
+    reject_reason VARCHAR(1000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    KEY idx_business_trips_employee_id (ho_so_nhan_vien_id),
+    KEY idx_business_trips_status (status),
+    KEY idx_business_trips_dates (start_date, end_date),
+    CONSTRAINT fk_business_trips_employee
+        FOREIGN KEY (ho_so_nhan_vien_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_business_trips_approver
+        FOREIGN KEY (approver_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vehicles (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    name VARCHAR(255) NOT NULL,
+    license_plate VARCHAR(50) NOT NULL UNIQUE,
+    driver_name VARCHAR(255) NOT NULL,
+    driver_phone VARCHAR(50) NOT NULL,
+    seat_capacity INT NOT NULL DEFAULT 4,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vehicle_requests (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    ho_so_nhan_vien_id CHAR(36) NOT NULL,
+    vehicle_id CHAR(36) NULL,
+    vehicle_type VARCHAR(50) NOT NULL,
+    departure_time DATETIME NOT NULL,
+    return_time DATETIME NOT NULL,
+    route_description VARCHAR(1000) NOT NULL,
+    passenger_count INT NOT NULL DEFAULT 1,
+    purpose VARCHAR(1000) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    approver_id CHAR(36) NULL,
+    driver_name VARCHAR(255) NULL,
+    driver_phone VARCHAR(50) NULL,
+    license_plate VARCHAR(50) NULL,
+    reject_reason VARCHAR(1000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    KEY idx_vehicle_requests_employee_id (ho_so_nhan_vien_id),
+    KEY idx_vehicle_requests_status (status),
+    CONSTRAINT fk_vehicle_requests_employee
+        FOREIGN KEY (ho_so_nhan_vien_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_vehicle_requests_approver
+        FOREIGN KEY (approver_id) REFERENCES ho_so_nhan_vien (id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_vehicle_requests_vehicle
+        FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS assets (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    unit VARCHAR(50) NOT NULL,
+    model VARCHAR(100) NULL,
+    serial_number VARCHAR(100) NULL,
+    brand VARCHAR(100) NULL,
+    manufacturer VARCHAR(100) NULL,
+    image LONGTEXT NULL,
+    specification VARCHAR(1000) NULL,
+    purchase_price DECIMAL(18,2) NULL,
+    purchase_date DATE NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    current_employee_id CHAR(36) NULL,
+    current_department VARCHAR(255) NULL,
+    description VARCHAR(1000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_assets_current_employee FOREIGN KEY (current_employee_id) REFERENCES ho_so_nhan_vien(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS asset_handovers (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    asset_id CHAR(36) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    from_employee_id CHAR(36) NULL,
+    to_employee_id CHAR(36) NULL,
+    from_department VARCHAR(255) NULL,
+    to_department VARCHAR(255) NULL,
+    handover_date DATE NOT NULL,
+    document_number VARCHAR(100) NULL,
+    note VARCHAR(1000) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_asset_handovers_asset FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE,
+    CONSTRAINT fk_asset_handovers_from_emp FOREIGN KEY (from_employee_id) REFERENCES ho_so_nhan_vien(id) ON DELETE SET NULL,
+    CONSTRAINT fk_asset_handovers_to_emp FOREIGN KEY (to_employee_id) REFERENCES ho_so_nhan_vien(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS asset_maintenances (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    asset_id CHAR(36) NOT NULL,
+    provider VARCHAR(255) NULL,
+    cost DECIMAL(15,2) NULL,
+    maintenance_date DATE NOT NULL,
+    completion_date DATE NULL,
+    content VARCHAR(1000) NULL,
+    notes VARCHAR(1000) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'UNDER_MAINTENANCE',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_asset_maintenances_asset FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS asset_inventories (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    document_number VARCHAR(100) NOT NULL UNIQUE,
+    inventory_date DATE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    notes VARCHAR(1000) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS asset_inventory_details (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    inventory_id CHAR(36) NOT NULL,
+    asset_id CHAR(36) NOT NULL,
+    is_present BIT(1) NOT NULL DEFAULT b'1',
+    current_status VARCHAR(50) NOT NULL,
+    actual_status VARCHAR(50) NOT NULL,
+    note VARCHAR(1000) NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_inventory_details_inventory FOREIGN KEY (inventory_id) REFERENCES asset_inventories(id) ON DELETE CASCADE,
+    CONSTRAINT fk_inventory_details_asset FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS asset_liquidations (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    asset_id CHAR(36) NOT NULL,
+    liquidation_date DATE NOT NULL,
+    price DECIMAL(15,2) NULL,
+    document_number VARCHAR(100) NULL,
+    reason VARCHAR(1000) NOT NULL,
+    notes VARCHAR(1000) NULL,
+    prior_status VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_asset_liquidations_asset FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS integration_channels (
+    id CHAR(36) NOT NULL,
+    provider_id VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DISCONNECTED',
+    email VARCHAR(255) NULL,
+    app_password VARCHAR(255) NULL,
+    client_id VARCHAR(255) NULL,
+    client_secret VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_integration_channels_provider_id (provider_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS integration_sync_logs (
+    id CHAR(36) NOT NULL,
+    account_name VARCHAR(255) NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    response_code INT NULL,
+    execution_time INT NOT NULL,
+    error_message VARCHAR(2000) NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
