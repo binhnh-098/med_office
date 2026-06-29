@@ -1,5 +1,9 @@
 package com.example.med_office.service;
 
+import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.med_office.dto.WarehouseOutboundAction;
 import com.example.med_office.dto.WarehouseOutboundApprovalRequest;
 import com.example.med_office.dto.WarehouseOutboundCreateRequest;
@@ -36,6 +40,8 @@ import java.util.Set;
 
 @Service
 public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
+
+    private static final Logger log = LoggerFactory.getLogger(WarehouseOutboundServiceImpl.class);
 
     private final WarehouseOutboundRepository warehouseOutboundRepository;
     private final WarehouseRepository warehouseRepository;
@@ -187,6 +193,7 @@ public class WarehouseOutboundServiceImpl implements WarehouseOutboundService {
         warehouseOutbound.setStatus(WarehouseOutboundStatus.COMPLETED);
         warehouseOutbound.setCompletedAt(Instant.now());
         WarehouseOutbound saved = warehouseOutboundRepository.save(warehouseOutbound);
+
         return toMutationResponse(saved);
     }
 

@@ -17,10 +17,12 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -193,7 +195,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/meals/patient/**")
                         .hasAuthority(PermissionCatalog.MEALS_PATIENT_UPDATE)
                         .requestMatchers("/api/rowboat/**").hasAuthority(PermissionCatalog.OVERVIEW_DASHBOARD_VIEW)
-                        .requestMatchers("/api/integration/**").hasAnyAuthority(PermissionCatalog.SYSTEM_ACCOUNTS_VIEW, PermissionCatalog.SYSTEM_ACCOUNTS_UPDATE)
+                        .requestMatchers(HttpMethod.GET, "/api/integration/channels", "/api/integration/sync-logs")
+                        .hasAnyAuthority(
+                                PermissionCatalog.INTEGRATION_CONNECTIONS_VIEW,
+                                PermissionCatalog.INTEGRATION_LOGS_VIEW,
+                                PermissionCatalog.INTEGRATION_ERRORS_VIEW,
+                                PermissionCatalog.INTEGRATION_MANAGE
+                        )
+                        .requestMatchers("/api/integration", "/api/integration/**")
+                        .hasAuthority(PermissionCatalog.INTEGRATION_MANAGE)
+                        .requestMatchers(HttpMethod.GET, "/api/sales-orders", "/api/sales-orders/**")
+                        .hasAuthority(PermissionCatalog.SALES_ORDERS_VIEW)
+                        .requestMatchers("/api/sales-orders", "/api/sales-orders/**")
+                        .hasAuthority(PermissionCatalog.SALES_ORDERS_MANAGE)
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

@@ -60,6 +60,12 @@ public final class PermissionCatalog {
     public static final String EMPLOYEES_BUSINESS_TRIP_MANAGE = "employees.business-trip.manage";
     public static final String CATALOGS_ASSET_VIEW = "catalogs.asset.view";
     public static final String CATALOGS_ASSET_MANAGE = "catalogs.asset.manage";
+    public static final String INTEGRATION_CONNECTIONS_VIEW = "integration.connections.view";
+    public static final String INTEGRATION_LOGS_VIEW = "integration.logs.view";
+    public static final String INTEGRATION_ERRORS_VIEW = "integration.errors.view";
+    public static final String INTEGRATION_MANAGE = "integration.manage";
+    public static final String SALES_ORDERS_VIEW = "sales.orders.view";
+    public static final String SALES_ORDERS_MANAGE = "sales.orders.manage";
 
     private static final List<PermissionDefinition> DEFINITIONS = List.of(
             permission(OVERVIEW_DASHBOARD_VIEW, "overview", "Tổng quan", "Xem báo cáo ở tổng quan"),
@@ -117,7 +123,13 @@ public final class PermissionCatalog {
             permission(EMPLOYEES_BUSINESS_TRIP_VIEW, "human-resources", "Nhân sự", "Xem thông tin công tác"),
             permission(EMPLOYEES_BUSINESS_TRIP_MANAGE, "human-resources", "Nhân sự", "Quản lý và đề xuất công tác"),
             permission(CATALOGS_ASSET_VIEW, "catalogs", "Danh mục", "Xem danh mục tài sản"),
-            permission(CATALOGS_ASSET_MANAGE, "catalogs", "Danh mục", "Quản lý danh mục tài sản")
+            permission(CATALOGS_ASSET_MANAGE, "catalogs", "Danh mục", "Quản lý danh mục tài sản"),
+            permission(INTEGRATION_CONNECTIONS_VIEW, "integration", "Kết nối đa kênh", "Xem quản lý kết nối"),
+            permission(INTEGRATION_LOGS_VIEW, "integration", "Kết nối đa kênh", "Xem lịch sử đồng bộ"),
+            permission(INTEGRATION_ERRORS_VIEW, "integration", "Kết nối đa kênh", "Xem nhật ký lỗi"),
+            permission(INTEGRATION_MANAGE, "integration", "Kết nối đa kênh", "Quản lý kết nối, webhook và ánh xạ"),
+            permission(SALES_ORDERS_VIEW, "sales", "Bán hàng", "Xem đơn bán hàng"),
+            permission(SALES_ORDERS_MANAGE, "sales", "Bán hàng", "Quản lý đơn bán hàng")
     );
 
     private PermissionCatalog() {

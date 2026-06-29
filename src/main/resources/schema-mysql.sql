@@ -318,6 +318,16 @@ CREATE TABLE IF NOT EXISTS warehouse_outbounds (
     approval_note VARCHAR(2000) NULL,
     rejection_reason VARCHAR(2000) NULL,
     completed_at DATETIME NULL,
+    e_invoice_required TINYINT(1) NOT NULL DEFAULT 0,
+    tax_code VARCHAR(50) NULL,
+    buyer_company VARCHAR(255) NULL,
+    buyer_address VARCHAR(500) NULL,
+    buyer_email VARCHAR(255) NULL,
+    e_invoice_status VARCHAR(30) NOT NULL DEFAULT 'NOT_ISSUED',
+    e_invoice_number VARCHAR(50) NULL,
+    e_invoice_lookup_code VARCHAR(50) NULL,
+    e_invoice_url VARCHAR(500) NULL,
+    e_invoice_error_message VARCHAR(1000) NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
@@ -344,6 +354,9 @@ CREATE TABLE IF NOT EXISTS warehouse_outbound_items (
     item_name VARCHAR(255) NOT NULL,
     unit VARCHAR(100) NULL,
     quantity DECIMAL(18,2) NOT NULL,
+    unit_price DECIMAL(18,2) NULL,
+    line_total DECIMAL(18,2) NULL,
+    vat_rate DECIMAL(5,2) NULL DEFAULT 0.00,
     batch_number VARCHAR(100) NULL,
     expiry_date DATE NULL,
     note VARCHAR(1000) NULL,
@@ -767,6 +780,74 @@ CREATE TABLE IF NOT EXISTS integration_sync_logs (
     created_at DATETIME NOT NULL,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sales_orders (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    code VARCHAR(50) NOT NULL,
+    order_date DATE NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    warehouse_id CHAR(36) NOT NULL,
+    warehouse_name VARCHAR(255) NOT NULL,
+    buyer_name VARCHAR(255) NULL,
+    tax_code VARCHAR(50) NULL,
+    buyer_company VARCHAR(255) NULL,
+    buyer_address VARCHAR(500) NULL,
+    buyer_email VARCHAR(255) NULL,
+    payment_method VARCHAR(50) NULL,
+    payment_status VARCHAR(30) NOT NULL,
+    total_amount_before_tax DECIMAL(18,2) NOT NULL,
+    total_tax_amount DECIMAL(18,2) NOT NULL,
+    total_amount_after_tax DECIMAL(18,2) NOT NULL,
+    e_invoice_status VARCHAR(30) NOT NULL DEFAULT 'NOT_ISSUED',
+    e_invoice_number VARCHAR(50) NULL,
+    e_invoice_lookup_code VARCHAR(50) NULL,
+    e_invoice_url VARCHAR(500) NULL,
+    e_invoice_error_message VARCHAR(1000) NULL,
+    note VARCHAR(2000) NULL,
+    warehouse_outbound_id CHAR(36) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_sales_orders_code (code),
+    KEY idx_sales_orders_status (status),
+    KEY idx_sales_orders_order_date (order_date),
+    KEY idx_sales_orders_warehouse_id (warehouse_id),
+    CONSTRAINT fk_sales_orders_warehouse
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_sales_orders_outbound
+        FOREIGN KEY (warehouse_outbound_id) REFERENCES warehouse_outbounds (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sales_order_items (
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    sales_order_id CHAR(36) NOT NULL,
+    item_id VARCHAR(100) NULL,
+    item_code VARCHAR(100) NULL,
+    item_name VARCHAR(255) NOT NULL,
+    unit VARCHAR(100) NULL,
+    quantity DECIMAL(18,2) NOT NULL,
+    unit_price DECIMAL(18,2) NOT NULL,
+    line_total_before_tax DECIMAL(18,2) NOT NULL,
+    vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    tax_amount DECIMAL(18,2) NOT NULL,
+    line_total_after_tax DECIMAL(18,2) NOT NULL,
+    batch_number VARCHAR(100) NULL,
+    expiry_date DATE NULL,
+    note VARCHAR(1000) NULL,
+    PRIMARY KEY (id),
+    KEY idx_sales_order_items_order_id (sales_order_id),
+    KEY idx_sales_order_items_item_code (item_code),
+    KEY idx_sales_order_items_item_name (item_name),
+    CONSTRAINT fk_sales_order_items_order
+        FOREIGN KEY (sales_order_id) REFERENCES sales_orders (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
 
 

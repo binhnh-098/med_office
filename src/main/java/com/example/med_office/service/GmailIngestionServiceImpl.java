@@ -236,7 +236,7 @@ public class GmailIngestionServiceImpl implements GmailIngestionService {
     }
 
     @Override
-    @Scheduled(fixedDelay = 30000) // Runs every 30 seconds
+    @Scheduled(fixedDelay = 300) // Runs every 30 seconds
     @Transactional
     public void triggerScheduledSync() {
         Optional<IntegrationChannel> gmailChannelOpt = channelRepository.findByProviderId("gmail");
@@ -333,7 +333,7 @@ public class GmailIngestionServiceImpl implements GmailIngestionService {
 
 
         int count = 0;
-        
+
         // Find or create default provider
         NhaCungCap gmailProvider = nhaCungCapRepository.findAll().stream()
                 .filter(ncc -> ncc.getTenNhaCungCap().equalsIgnoreCase("Hộp thư điện tử (Gmail)"))
@@ -364,7 +364,7 @@ public class GmailIngestionServiceImpl implements GmailIngestionService {
                 }
 
                 String soCongVan = "CV/GMAIL/" + messageId.substring(0, Math.min(messageId.length(), 20)).toUpperCase();
-                
+
                 // Avoid double import if soCongVan already exists
                 if (congVanDenRepository.existsBySoCongVanIgnoreCase(soCongVan)) {
                     // Mark as read anyway so we don't process it again
@@ -390,13 +390,13 @@ public class GmailIngestionServiceImpl implements GmailIngestionService {
                 req.setNoiDungTomTat(content);
                 req.setDonViGuiId(gmailProvider.getId());
                 req.setNguoiKy(senderName);
-                
+
                 Date sentDate = message.getSentDate();
-                LocalDate ngayVanBan = sentDate != null ? 
+                LocalDate ngayVanBan = sentDate != null ?
                         sentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : LocalDate.now();
                 req.setNgayVanBan(ngayVanBan);
                 req.setNgayNhan(LocalDate.now());
-                
+
                 req.setMucDoKhan("THUONG");
                 req.setMucDoMat("THUONG");
                 req.setNguonNhan("GMAIL");
@@ -404,7 +404,7 @@ public class GmailIngestionServiceImpl implements GmailIngestionService {
                 req.setDaXuLy(false);
                 req.setTrangThai("cho_phan_luong");
                 req.setIsDeleted(false);
-                
+
                 String trichYeu = content;
                 req.setTrichYeu(trichYeu);
 
